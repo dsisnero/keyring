@@ -1,6 +1,7 @@
+require "./credential"
 module Keyring
   abstract class Backend
-    abstract def self.available? : Bool
+    # abstract def self.available? : Bool
     abstract def get_password(service : String, username : String) : String?
     abstract def set_password(service : String, username : String, password : String)
     abstract def delete_password(service : String, username : String)

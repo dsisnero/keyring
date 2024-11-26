@@ -1,10 +1,12 @@
+# require "win32/security"
+require "win32cr"
+require "win32cr/security/credentials"
 require "./backend"
 require "./errors"
 
 module Keyring
   class WindowsBackend < Backend
-    CRED_TYPE_GENERIC = 1_u32
-
+    CRED_TYPE_GENERIC = LibWin32::CRED_TYPE::CRED_TYPE_GENERIC
     def self.available? : Bool
       {% if flag?(:windows) %}
         true
