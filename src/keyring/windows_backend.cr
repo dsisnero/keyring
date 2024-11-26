@@ -39,7 +39,7 @@ module Keyring
         credential.type = CRED_TYPE_GENERIC
         credential.target_name = target.to_utf16
         credential.user_name = username.to_utf16
-        credential.credential_blob = password.to_utf16
+        credential.credential_blob = password.to_slice.to_unsafe
         credential.credential_blob_size = password.bytesize
         credential.persist = LibWin32::CRED_PERSIST::CRED_PERSIST_LOCAL_MACHINE
 
