@@ -1,0 +1,22 @@
+name: keyring
+version: 0.1.0
+
+authors:
+  - Dominic Sisneros <dsisnero@gmail.com>
+
+targets:
+  keyring:
+    main: src/keyring.cr
+
+dependencies:
+  win32cr:
+    github: mjblack/win32cr
+
+development_dependencies:
+  webmock:
+    github: manastech/webmock.cr
+
+
+crystal: '>= 1.14.0'
+
+license: MIT
