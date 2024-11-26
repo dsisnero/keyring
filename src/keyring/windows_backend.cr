@@ -1,4 +1,6 @@
-require "win32cr/advapi32"
+require "win32cr"
+require "win32cr/security"
+require "win32cr/security/credentials"
 require "./backend"
 require "./errors"
 
