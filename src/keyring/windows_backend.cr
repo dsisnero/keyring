@@ -5,6 +5,17 @@ require "./backend"
 require "./errors"
 
 module Keyring
+
+  module Windows::Credential
+    # alias Handle = LibC::CREDENTIALW*
+
+    protected def initialize(credentialw : Handle)
+      @username = credentialw.value.username
+      @targetname = credentialw.value.target_name
+    end
+  end
+      
+            
   class WindowsBackend < Backend
     CRED_TYPE_GENERIC = LibWin32::CRED_TYPE::CRED_TYPE_GENERIC
     def self.available? : Bool
@@ -18,12 +29,16 @@ module Keyring
     def get_password(service : String, username : String) : String?
       {% if flag?(:windows) %}
         target = "#{service}:#{username}"
-        credential = uninitialized LibWin32::CREDENTIALW
-        if LibWin32.CredReadW(target.to_utf16, CRED_TYPE_GENERIC, 0, pointerof(credential)) != 0
+        win_target = target.to_utf16
+        credential_ptr = Pointer(LibWin32::CREDENTIALW).null
+        ret = LibWin32.CredReadW(win_target, CRED_TYPE_GENERIC, 0, pointerof(credential_ptr))
+        if ret  != 0
           begin
-            return String.new(credential.credential_blob.to_unsafe.as(UInt8*), credential.credential_blob_size)
+            credential = credential_ptr.value
+            # safely extract credential blob
+            return String.new(credential.credential_blob.as(UInt8*), credential.credential_blob_size)
           ensure
-            LibWin32.CredFree(credential)
+            LibWin32.CredFree(credential_ptr)
           end
         end
       {% else %}

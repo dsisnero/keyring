@@ -85,6 +85,9 @@
      private def get_preferred_backend : Backend
        backends = [
          WindowsBackend,
+         MacOsKeyChainBackend,
+         LinuxSecretServiceBackend
+         FileBackend
          # Add more backends here as they're implemented
        ]
 

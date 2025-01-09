@@ -1,85 +1,111 @@
-require "crypto/bcrypt"
- require "crypto/subtle"
- require "base64"
- require "openssl"
+require "sodium"
+require "base64"
+require "secure_random"
 
- module Keyring
-   class EncryptionError < Error; end
+module Keyring
+  class EncryptionError < Error; end
 
-   class Encryption
-     CIPHER = "AES-256-CBC"
+  class Encryption
+    # Encryption constants
+    KEY_LENGTH = Sodium::SecretBox::KEYBYTES
+    NONCE_LENGTH = Sodium::SecretBox::NONCEBYTES
 
-     def self.generate_key : String
-       Base64.strict_encode(Random::Secure.random_bytes(32))
-     end
+    # Generate a secure random encryption key
+    def self.generate_key : String
+      key = Sodium::SecretBox.random_key
+      Base64.strict_encode(key)
+    end
 
-     def self.encrypt(data : String, key : String) : String
-       begin
-         cipher = OpenSSL::Cipher.new(CIPHER)
-         cipher.encrypt
+    # Encrypt a string with a given key
+    def self.encrypt(data : String, key : String) : String
+      # Validate inputs
+      raise EncryptionError.new("Data cannot be empty") if data.empty?
+      raise EncryptionError.new("Key cannot be empty") if key.empty?
 
-         # Generate random IV
-         iv = Random::Secure.random_bytes(16)
-         cipher.iv = iv
+      begin
+        # Decode the base64 key
+        raw_key = Base64.decode(key)
 
-         # Decode key from Base64
-         raw_key = Base64.decode(key)
-         cipher.key = raw_key
+        # Ensure key is correct length
+        raise EncryptionError.new("Invalid key length") if raw_key.size != KEY_LENGTH
 
-         # Encrypt the data
-         encrypted = cipher.update(data)
-         encrypted += cipher.final
+        # Generate a random nonce
+        nonce = Sodium::SecretBox.random_nonce
 
-         # Combine IV and encrypted data and encode
-         Base64.strict_encode(iv + encrypted)
-       rescue e
-         raise EncryptionError.new("Failed to encrypt: #{e.message}")
-       end
-     end
+        # Encrypt the data
+        encrypted_data = Sodium::SecretBox.seal(data.to_slice, nonce, raw_key)
 
-     def self.decrypt(encrypted_data : String, key : String) : String
-       begin
-         # Decode the combined data
-         combined = Base64.decode(encrypted_data)
+        # Combine nonce and encrypted data, then base64 encode
+        Base64.strict_encode(nonce + encrypted_data)
+      rescue ex : ArgumentError | Sodium::CryptoError
+        raise EncryptionError.new("Encryption failed: #{ex.message}")
+      end
+    end
 
-         # Split IV and encrypted data
-         iv = combined[0, 16]
-         combined = Base64.decode(encrypted_data)
+    # Decrypt a string with a given key
+    def self.decrypt(encrypted_data : String, key : String) : String
+      # Validate inputs
+      raise EncryptionError.new("Encrypted data cannot be empty") if encrypted_data.empty?
+      raise EncryptionError.new("Key cannot be empty") if key.empty?
 
-         # Split IV and encrypted data
-         iv = combined[0, 16]
-     def self.decrypt(encrypted_data : String, key : String) : String
-       raw = Base64.decode(encrypted_data)
+      begin
+        # Decode the base64 encrypted data
+        raw = Base64.decode(encrypted_data)
 
-       # Extract salt, IV, and encrypted data
-       salt = raw[0, 16]
-       iv = raw[16, 16]
-       data = raw[32..-1]
+        # Extract nonce and encrypted data
+        nonce = raw[0, NONCE_LENGTH]
+        data = raw[NONCE_LENGTH, raw.size - NONCE_LENGTH]
 
-       cipher = OpenSSL::Cipher.new(CIPHER)
-       cipher.decrypt
+        # Decode the base64 key
+        raw_key = Base64.decode(key)
 
-       key_bytes = generate_key(key, Base64.encode(salt))
-       cipher.key = key_bytes
-       cipher.iv = iv
+        # Ensure key is correct length
+        raise EncryptionError.new("Invalid key length") if raw_key.size != KEY_LENGTH
 
-       decrypted = cipher.update(data)
-       decrypted += cipher.final
+        # Decrypt the data
+        decrypted_data = Sodium::SecretBox.open(data, nonce, raw_key)
 
-       String.new(decrypted)
-     rescue ex : OpenSSL::Error | OpenSSL::Cipher::Error | Base64::Error
-       raise EncryptionError.new("Decryption failed: #{ex.message}")
-     end
+        # Convert decrypted data to string
+        String.new(decrypted_data)
+      rescue ex : Sodium::CryptoError | Base64::Error
+        raise EncryptionError.new("Decryption failed: #{ex.message}")
+      end
+    end
 
-     def self.hash_password(password : String) : String
-       Crypto::Bcrypt::Password.create(password, cost: 12).to_s
-     end
+    # Password hashing for credential verification
+    def self.hash_password(password : String) : String
+      # Use Argon2 for password hashing
+      salt = Sodium.random_bytes(Sodium::PasswordHash::SALTBYTES)
+      hash = Sodium::PasswordHash.hash(
+        password,
+        salt,
+        Sodium::PasswordHash::OPSLIMIT_INTERACTIVE,
+        Sodium::PasswordHash::MEMLIMIT_INTERACTIVE
+      )
+      Base64.strict_encode(hash)
+    end
 
-     def self.verify_password(password : String, hash : String) : Bool
-       bcrypt = Crypto::Bcrypt::Password.new(hash)
-       Crypto::Subtle.constant_time_compare(bcrypt.to_s, hash)
-     rescue
-       false
-     end
-   end
- end
+    # Verify a password against a hash
+    def self.verify_password(password : String, hash : String) : Bool
+      begin
+        # Decode the base64 stored hash
+        stored_hash = Base64.decode(hash)
+
+        # Verify the password
+        Sodium::PasswordHash.verify(stored_hash, password)
+      rescue
+        false
+      end
+    end
+
+    # Generate a secure random token
+    def self.generate_token(length : Int32 = 32) : String
+      Sodium.random_bytes(length).hexstring
+    end
+
+    # Generate a secure random salt
+    def self.generate_salt : String
+      Base64.strict_encode(Sodium.random_bytes(Sodium::PasswordHash::SALTBYTES))
+    end
+  end
+end

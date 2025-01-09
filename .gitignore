@@ -1,7 +1,9 @@
 /docs/
-/lib/
+/lib/webmock/
 /bin/
 /.shards/
 *.dwarf
 .aider*
 .env
+lib/sodium
+vcpkg_installed

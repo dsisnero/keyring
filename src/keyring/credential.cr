@@ -1,5 +1,6 @@
  require "json"
  require "time"
+require "./encryption"
 
  module Keyring
    class Credential
