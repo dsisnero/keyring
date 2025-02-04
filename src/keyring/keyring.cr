@@ -65,6 +65,20 @@
          cred.metadata.values.any? { |v| v.includes?(query) }
        end
      end
+    
+      def advanced_search(
+    service : String? = nil,
+    username : String? = nil,
+    metadata : Hash(String, String)? = nil,
+    created_after : Time? = nil
+  ) : Array(Credential)
+    list_credentials.select do |cred|
+      (service.nil? || cred.service == service) &&
+      (username.nil? || cred.username == username) &&
+      (metadata.nil? || metadata.all? { |k, v| cred.metadata[k]? == v }) &&
+      (created_after.nil? || cred.created_at > created_after)
+    end
+  end
 
      def export_credentials(path : String)
        Log.info { "Exporting credentials to #{path}" }

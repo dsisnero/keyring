@@ -1,4 +1,5 @@
 require "./credential"
+
 module Keyring
   abstract class Backend
     # abstract def self.available? : Bool

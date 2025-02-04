@@ -17,6 +17,7 @@ development_dependencies:
     github: manastech/webmock.cr
   sodium:
     github: didactic-drunk/sodium.cr
+    branch: master
 
 crystal: '>= 1.14.0'
 

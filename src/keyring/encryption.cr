@@ -1,13 +1,10 @@
 require "sodium"
 require "base64"
-require "secure_random"
 
 module Keyring
-  class EncryptionError < Error; end
-
   class Encryption
     # Encryption constants
-    KEY_LENGTH = Sodium::SecretBox::KEYBYTES
+    KEY_LENGTH   = Sodium::SecretBox::KEYBYTES
     NONCE_LENGTH = Sodium::SecretBox::NONCEBYTES
 
     # Generate a secure random encryption key
@@ -87,15 +84,13 @@ module Keyring
 
     # Verify a password against a hash
     def self.verify_password(password : String, hash : String) : Bool
-      begin
-        # Decode the base64 stored hash
-        stored_hash = Base64.decode(hash)
+      # Decode the base64 stored hash
+      stored_hash = Base64.decode(hash)
 
-        # Verify the password
-        Sodium::PasswordHash.verify(stored_hash, password)
-      rescue
-        false
-      end
+      # Verify the password
+      Sodium::PasswordHash.verify(stored_hash, password)
+    rescue
+      false
     end
 
     # Generate a secure random token
