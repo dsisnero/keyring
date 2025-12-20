@@ -28,6 +28,7 @@ module Keyring
     def password=(new_password : String?)
       @password = new_password
       @modified_at = Time.utc
+      @encrypted = false # Reset encrypted flag when password changes
       encrypt_if_needed
     end
 

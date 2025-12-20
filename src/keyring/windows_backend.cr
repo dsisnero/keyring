@@ -1,6 +1,7 @@
 # require "win32/security"
 require "win32cr"
 require "win32cr/security/credentials"
+require "json"
 require "./backend"
 require "./errors"
 
@@ -74,6 +75,9 @@ module Keyring
     def set_password(service : String, username : String, password : String)
       target = "#{service}:#{username}"
 
+      # Preserve existing comment (metadata) if any
+      existing_comment = get_existing_comment(target)
+
       # Prepare credential structure
       credential = LibWin32::CREDENTIALW.new
       credential.type = CRED_TYPE_GENERIC
@@ -88,6 +92,11 @@ module Keyring
 
       # Set persistence level
       credential.persist = LibWin32::CRED_PERSIST::CRED_PERSIST_LOCAL_MACHINE
+
+      # Preserve existing comment (metadata)
+      if existing_comment
+        credential.comment = existing_comment.to_utf16
+      end
 
       # Write credential
       if LibWin32.CredWriteW(pointerof(credential), 0_u32) == 0
@@ -133,9 +142,68 @@ module Keyring
     end
 
     def get_credential(service : String, username : String) : Credential?
-      if password = get_password(service, username)
-        Credential.new(service, username, password)
-      end
+      fetch_credential(service, username)
+    end
+
+    def supports_metadata? : Bool
+      {% if flag?(:windows) %}
+        true
+      {% else %}
+        false
+      {% end %}
+    end
+
+    def set_metadata(service : String, username : String, key : String, value : String)
+      {% if flag?(:windows) %}
+        target = "#{service}:#{username}"
+        win_target = target.to_utf16
+        credential_ptr = Pointer(LibWin32::CREDENTIALW).null
+        ret = LibWin32.CredReadW(win_target, CRED_TYPE_GENERIC, 0, pointerof(credential_ptr))
+        if ret == 0
+          raise KeyringError.new("Credential not found: #{service}:#{username}")
+        end
+
+        begin
+          credential = credential_ptr.value
+          # Parse existing metadata from comment field
+          metadata = {} of String => String
+          if !credential.comment.null?
+            comment_str = String.new(credential.comment)
+            if !comment_str.empty?
+              begin
+                metadata = Hash(String, String).from_json(comment_str)
+              rescue
+                metadata = {} of String => String
+              end
+            end
+          end
+
+          # Update metadata
+          metadata[key] = value
+
+          # Create updated credential with new comment
+          updated = LibWin32::CREDENTIALW.new
+          updated.type = CRED_TYPE_GENERIC
+          updated.target_name = win_target
+          updated.user_name = username.to_utf16
+          updated.credential_blob = credential.credential_blob
+          updated.credential_blob_size = credential.credential_blob_size
+          updated.persist = credential.persist
+
+          # Set comment with JSON metadata
+          comment_json = metadata.to_json
+          updated.comment = comment_json.to_utf16
+
+          if LibWin32.CredWriteW(pointerof(updated), 0_u32) == 0
+            error_code = LibC.GetLastError
+            raise KeyringError.new("Failed to update metadata. Error code: #{error_code}")
+          end
+        ensure
+          LibWin32.CredFree(credential_ptr) unless credential_ptr.null?
+        end
+      {% else %}
+        raise NoBackendError.new("Windows backend not available")
+      {% end %}
     end
 
     # Main method to list credentials
@@ -204,7 +272,7 @@ module Keyring
     private def parse_credential(cred : LibWin32::CREDENTIALW) : Credential?
       # Parse target name
       target = parse_target_name(cred)
-      return nil unless target
+      return unless target
 
       begin
         service, username = target
@@ -261,6 +329,12 @@ module Keyring
       # Add Windows-specific metadata
       add_windows_metadata(credential, cred)
 
+      # Add custom metadata from comment field
+      custom_metadata = extract_custom_metadata(cred)
+      custom_metadata.each do |key, value|
+        credential.add_metadata(key, value)
+      end
+
       credential
     end
 
@@ -277,6 +351,53 @@ module Keyring
 
       metadata_mappings.each do |key, value|
         credential.add_metadata(key, value)
+      end
+    end
+
+    # Extract custom metadata from comment field
+    private def extract_custom_metadata(cred : LibWin32::CREDENTIALW) : Hash(String, String)
+      metadata = {} of String => String
+      return metadata unless cred.comment
+
+      comment_str = String.new(cred.comment)
+      return metadata if comment_str.empty?
+
+      begin
+        metadata = Hash(String, String).from_json(comment_str)
+      rescue
+        metadata = {} of String => String
+      end
+      metadata
+    end
+
+    # Get existing comment for a credential target
+    private def get_existing_comment(target : String) : String?
+      win_target = target.to_utf16
+      credential_ptr = Pointer(LibWin32::CREDENTIALW).null
+      ret = LibWin32.CredReadW(win_target, CRED_TYPE_GENERIC, 0, pointerof(credential_ptr))
+      return if ret == 0
+      begin
+        cred = credential_ptr.value
+        return if cred.comment.null?
+        String.new(cred.comment)
+      ensure
+        LibWin32.CredFree(credential_ptr) unless credential_ptr.null?
+      end
+    end
+
+    # Fetch a single credential with metadata
+    private def fetch_credential(service : String, username : String) : Credential?
+      target = "#{service}:#{username}"
+      win_target = target.to_utf16
+      credential_ptr = Pointer(LibWin32::CREDENTIALW).null
+      ret = LibWin32.CredReadW(win_target, CRED_TYPE_GENERIC, 0, pointerof(credential_ptr))
+      return if ret == 0
+      begin
+        cred = credential_ptr.value
+        password = String.new(cred.credential_blob.as(UInt8*), cred.credential_blob_size)
+        build_credential(service: service, username: username, password: password, cred: cred)
+      ensure
+        LibWin32.CredFree(credential_ptr) unless credential_ptr.null?
       end
     end
 

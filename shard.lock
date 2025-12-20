@@ -1,0 +1,42 @@
+version: 2.0
+shards:
+  admiral:
+    git: https://github.com/jwaldrip/admiral.cr.git
+    version: 1.12.1
+
+  ameba:
+    git: https://github.com/crystal-ameba/ameba.git
+    version: 1.6.4
+
+  connect-proxy:
+    git: https://github.com/spider-gazelle/connect-proxy.git
+    version: 2.0.2
+
+  crypto-secret:
+    git: https://github.com/didactic-drunk/crypto-secret.cr.git
+    version: 0.2.0+git.commit.388f4a3c7fb3c283ea5e99f918ff89e3d98f8626
+
+  git-repository:
+    git: https://github.com/place-labs/git-repository.git
+    version: 1.6.0
+
+  mmap:
+    git: https://github.com/crystal-posix/mmap.cr.git
+    version: 0.4.0
+
+  sodium:
+    git: https://github.com/didactic-drunk/sodium.cr.git
+    version: 1.2.3+git.commit.2e1856fedb58c80b6be21c0045481ff4e93ab7f3
+
+  webmock:
+    git: https://github.com/manastech/webmock.cr.git
+    version: 0.14.0
+
+  win32cr:
+    git: https://github.com/mjblack/win32cr.git
+    version: 1.2.1
+
+  winmd:
+    git: https://github.com/mjblack/winmd.git
+    version: 1.2.1
+

@@ -4,12 +4,12 @@ require "base64"
 module Keyring
   class Encryption
     # Encryption constants
-    KEY_LENGTH   = Sodium::SecretBox::KEYBYTES
-    NONCE_LENGTH = Sodium::SecretBox::NONCEBYTES
+    KEY_LENGTH   = Sodium::SecretBox::KEY_SIZE
+    NONCE_LENGTH = Sodium::SecretBox::NONCE_SIZE
 
     # Generate a secure random encryption key
     def self.generate_key : String
-      key = Sodium::SecretBox.random_key
+      key = Random::Secure.random_bytes(KEY_LENGTH)
       Base64.strict_encode(key)
     end
 
@@ -26,15 +26,16 @@ module Keyring
         # Ensure key is correct length
         raise EncryptionError.new("Invalid key length") if raw_key.size != KEY_LENGTH
 
-        # Generate a random nonce
-        nonce = Sodium::SecretBox.random_nonce
+        # Create SecretBox with the key
+        box = Sodium::SecretBox.copy_from(raw_key)
 
-        # Encrypt the data
-        encrypted_data = Sodium::SecretBox.seal(data.to_slice, nonce, raw_key)
+        # Encrypt the data (returns tuple of encrypted bytes and nonce)
+        encrypted_bytes, nonce = box.encrypt(data.to_slice)
 
         # Combine nonce and encrypted data, then base64 encode
-        Base64.strict_encode(nonce + encrypted_data)
-      rescue ex : ArgumentError | Sodium::CryptoError
+        combined = nonce.to_slice + encrypted_bytes
+        Base64.strict_encode(combined)
+      rescue ex : ArgumentError | Sodium::Error
         raise EncryptionError.new("Encryption failed: #{ex.message}")
       end
     end
@@ -49,8 +50,12 @@ module Keyring
         # Decode the base64 encrypted data
         raw = Base64.decode(encrypted_data)
 
+        # Validate minimum length
+        min_size = NONCE_LENGTH + Sodium::SecretBox::MAC_SIZE
+        raise EncryptionError.new("Decryption failed: data too short") if raw.size < min_size
+
         # Extract nonce and encrypted data
-        nonce = raw[0, NONCE_LENGTH]
+        nonce_bytes = raw[0, NONCE_LENGTH]
         data = raw[NONCE_LENGTH, raw.size - NONCE_LENGTH]
 
         # Decode the base64 key
@@ -59,12 +64,18 @@ module Keyring
         # Ensure key is correct length
         raise EncryptionError.new("Invalid key length") if raw_key.size != KEY_LENGTH
 
+        # Create SecretBox with the key
+        box = Sodium::SecretBox.copy_from(raw_key)
+
+        # Create Nonce from bytes
+        nonce = Sodium::Nonce.new(nonce_bytes)
+
         # Decrypt the data
-        decrypted_data = Sodium::SecretBox.open(data, nonce, raw_key)
+        decrypted_data = box.decrypt(data, nonce: nonce)
 
         # Convert decrypted data to string
         String.new(decrypted_data)
-      rescue ex : Sodium::CryptoError | Base64::Error
+      rescue ex : Sodium::Error | Base64::Error | IndexError
         raise EncryptionError.new("Decryption failed: #{ex.message}")
       end
     end
@@ -72,35 +83,32 @@ module Keyring
     # Password hashing for credential verification
     def self.hash_password(password : String) : String
       # Use Argon2 for password hashing
-      salt = Sodium.random_bytes(Sodium::PasswordHash::SALTBYTES)
-      hash = Sodium::PasswordHash.hash(
-        password,
-        salt,
-        Sodium::PasswordHash::OPSLIMIT_INTERACTIVE,
-        Sodium::PasswordHash::MEMLIMIT_INTERACTIVE
-      )
-      Base64.strict_encode(hash)
+      pwhash = Sodium::Password::Hash.new
+      pwhash.mem = Sodium::Password::MEMLIMIT_INTERACTIVE
+      pwhash.ops = Sodium::Password::OPSLIMIT_INTERACTIVE
+
+      hash = pwhash.create(password)
+      String.new(hash)
     end
 
     # Verify a password against a hash
-    def self.verify_password(password : String, hash : String) : Bool
-      # Decode the base64 stored hash
-      stored_hash = Base64.decode(hash)
-
-      # Verify the password
-      Sodium::PasswordHash.verify(stored_hash, password)
-    rescue
+    def self.verify_password(password : String, hash_str : String) : Bool
+      pwhash = Sodium::Password::Hash.new
+      pwhash.verify(hash_str, password)
+      true
+    rescue Sodium::Password::Error::Verify
       false
     end
 
     # Generate a secure random token
     def self.generate_token(length : Int32 = 32) : String
-      Sodium.random_bytes(length).hexstring
+      Random::Secure.random_bytes(length).hexstring
     end
 
     # Generate a secure random salt
     def self.generate_salt : String
-      Base64.strict_encode(Sodium.random_bytes(Sodium::PasswordHash::SALTBYTES))
+      salt = Random::Secure.random_bytes(32)
+      Base64.strict_encode(salt)
     end
   end
 end

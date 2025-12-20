@@ -1,0 +1,33 @@
+# Git
+.git/
+.gitignore
+
+# Crystal
+lib/
+.crystal/
+.shards/
+shard.lock
+*.dwarf
+
+# Build artifacts
+bin/
+*.o
+*.a
+
+# Test artifacts
+/tmp/
+
+# IDE
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*~

@@ -1,0 +1,394 @@
+# Ameba configuration for Keyring project
+
+# Enable/disable entire inspection
+All:
+  Enabled: true
+
+# Style guide rules
+Style/BlockDelimiter:
+  Enabled: true
+  DelimiterStyle: :newline
+
+Style/ClassVars:
+  Enabled: true
+
+Style/ConstantNames:
+  Enabled: true
+
+Style/ControlExpression:
+  Enabled: true
+
+Style/Documentation:
+  Enabled: false  # Disabled as we have minimal doc comments currently
+
+Style/EmptyElse:
+  Enabled: true
+  AllowEmpty: false
+
+Style/EndOfLine:
+  Enabled: true
+
+Style/FileName:
+  Enabled: true
+  ExpectedFilename: nil
+
+Style/FilenameConsistency:
+  Enabled: true
+
+Style/FrozenStringLiteralComment:
+  Enabled: false  # Not common in Crystal
+
+Style/GlobalVars:
+  Enabled: true
+
+Style/GuardClause:
+  Enabled: true
+
+Style/HashSyntax:
+  Enabled: true
+
+Style/IfUnlessModifier:
+  Enabled: true
+  MaxLineLength: 80
+
+Style/LineLength:
+  Enabled: true
+  MaxLength: 120
+
+Style/MethodNames:
+  Enabled: true
+
+Style/ModuleNames:
+  Enabled: true
+
+Style/MultilineAssignmentLayout:
+  Enabled: true
+
+Style/MultilineBlockChain:
+  Enabled: true
+
+Style/MultilineMethodCallIndentation:
+  Enabled: true
+
+Style/NegatedConditionsInUnless:
+  Enabled: true
+
+Style/NegatedConditions:
+  Enabled: true
+
+Style/NilComparison:
+  Enabled: true
+
+Style/NotNil:
+  Enabled: true
+
+Style/Not:
+  Enabled: true
+
+Style/ParallelAssignment:
+  Enabled: true
+
+Style/ParameterAlignment:
+  Enabled: true
+
+Style/ParenthesesAroundCondition:
+  Enabled: true
+
+Style/PercentLiteralDelimiters:
+  Enabled: true
+
+Style/PerlBackrefs:
+  Enabled: false  # Allow Crystal's $1, $2, etc.
+
+Style/PredicateName:
+  Enabled: true
+
+Style/PreferredBlockTypes:
+  Enabled: true
+
+Style/Proc:
+  Enabled: true
+
+Style/RedundantBegin:
+  Enabled: true
+
+Style/RedundantReturn:
+  Enabled: true
+
+Style/SelfAssignment:
+  Enabled: true
+
+Style/SignalException:
+  Enabled: true
+
+Style/SingleLineBlockParams:
+  Enabled: true
+
+Style/SingleLineMethods:
+  Enabled: true
+  MaxLineLength: 80
+
+Style/SpaceAroundOperators:
+  Enabled: true
+
+Style/SpaceAfterComma:
+  Enabled: true
+
+Style/SpaceAfterControlKeywords:
+  Enabled: true
+
+Style/SpaceAfterMethodName:
+  Enabled: true
+
+Style/SpaceAfterNot:
+  Enabled: true
+
+Style/SpaceAfterSemicolon:
+  Enabled: true
+
+Style/SpaceAroundBlockParameters:
+  Enabled: true
+
+Style/SpaceAroundEqualsInParameterDefault:
+  Enabled: true
+
+Style/SpaceBeforeBlockBraces:
+  Enabled: true
+
+Style/SpaceBeforeComma:
+  Enabled: true
+
+Style/SpaceInsideArrayLiteralBrackets:
+  Enabled: true
+
+Style/SpaceInsideBrackets:
+  Enabled: true
+
+Style/SpaceInsideHashLiteralBraces:
+  Enabled: true
+
+Style/SpaceInsideParens:
+  Enabled: true
+
+Style/SpecialGlobalVars:
+  Enabled: false  # Allow Crystal's $? and similar
+
+Style/StringLiterals:
+  Enabled: true
+  ConsistentQuotes: :double
+
+Style/SymbolArrayLiteral:
+  Enabled: true
+
+Style/Tab:
+  Enabled: true
+
+Style/TernaryParentheses:
+  Enabled: true
+
+Style/TrailingBlankLines:
+  Enabled: true
+
+Style/TrailingWhitespace:
+  Enabled: true
+
+Style/UnlessElse:
+  Enabled: true
+
+Style/UnneededCapitalW:
+  Enabled: true
+
+Style/UselessAssignment:
+  Enabled: true
+
+Style/VariableNames:
+  Enabled: true
+
+Style/WhenThen:
+  Enabled: true
+
+Style/WhileUntilModifier:
+  Enabled: true
+
+Style/WordArray:
+  Enabled: true
+
+# Lint rules
+Lint/AmbiguousAssignment:
+  Enabled: true
+
+Lint/AmbiguousOperator:
+  Enabled: true
+
+Lint/AmbiguousRegexpLiteral:
+  Enabled: true
+
+Lint/AssignmentInCondition:
+  Enabled: true
+
+Lint/BeginBlock:
+  Enabled: true
+
+Lint/DeprecatedClassMethods:
+  Enabled: true
+
+Lint/DuplicatedKey:
+  Enabled: true
+
+Lint/ElseLayout:
+  Enabled: true
+
+Lint/EmptyExpression:
+  Enabled: true
+
+Lint/EndAlignment:
+  Enabled: true
+
+Lint/EnsureReturn:
+  Enabled: true
+
+Lint/ImplicitStringConcatenation:
+  Enabled: true
+
+Lint/IneffectiveAccessModifier:
+  Enabled: true
+
+Lint/LiteralInInterpolation:
+  Enabled: true
+
+Lint/MissingCopDirective:
+  Enabled: false  # Not using RuboCop
+
+Lint/MultipleReturn:
+  Enabled: false  # Allow multiple return types in some cases
+
+Lint/NotNilCheck:
+  Enabled: true
+
+Lint/OrAssignment:
+  Enabled: true
+
+Lint/RedundantWithIndex:
+  Enabled: true
+
+Lint/RedundantWithObject:
+  Enabled: true
+
+Lint/RescueException:
+  Enabled: true
+
+Lint/ShadowingOuterLocalVar:
+  Enabled: true
+
+Lint/Syntax:
+  Enabled: true
+
+Lint/UnderscorePrefixedVariableName:
+  Enabled: true
+
+Lint/UninitializedInstanceVariable:
+  Enabled: true
+
+Lint/UnreachableCode:
+  Enabled: true
+
+Lint/UnexpectedBlockArity:
+  Enabled: true
+
+Lint/UselessAssign:
+  Enabled: true
+
+Lint/UselessBegin:
+  Enabled: true
+
+Lint/UselessComparison:
+  Enabled: true
+
+Lint/UselessInvocation:
+  Enabled: true
+
+Lint/UselessSetterCall:
+  Enabled: true
+
+# Performance rules
+Performance/AnyInsteadOfEmpty:
+  Enabled: true
+
+Performance/ArrayReject:
+  Enabled: true
+
+Performance/CompareWithBlock:
+  Enabled: true
+
+Performance/Count:
+  Enabled: true
+
+Performance/DeletePrefixSuffix:
+  Enabled: true
+
+Performance/Detect:
+  Enabled: true
+
+Performance/DoubleStartEndWith:
+  Enabled: true
+
+Performance/EndWith:
+  Enabled: true
+
+Performance/FlattenOnce:
+  Enabled: true
+
+Performance/InefficientHashSearch:
+  Enabled: true
+
+Performance/MapCompact:
+  Enabled: true
+
+Performance/RedundantBlockCall:
+  Enabled: true
+
+Performance/RedundantMerge:
+  Enabled: true
+
+Performance/RedundantStringChars:
+  Enabled: true
+
+Performance/RejectReject:
+  Enabled: true
+
+Performance/ReverseFirst:
+  Enabled: true
+
+Performance/SelectMap:
+  Enabled: true
+
+Performance/Size:
+  Enabled: true
+
+Performance/StartWith:
+  Enabled: true
+
+Performance/StringInclude:
+  Enabled: true
+
+Performance/TimesMap:
+  Enabled: true
+
+# Exclude certain files/directories
+exclude:
+  - "spec/**/*.cr"          # Test files
+  - ".github/"              # GitHub workflows
+  - "bin/"                  # Binary directory
+  - "lib/"                  # Dependencies
+  - "src/keyring/linux_backend.cr"  # Complex FFI code
+  - "src/keyring/macos_backend.cr"  # Complex FFI code
+  - "src/keyring/windows_backend.cr" # Complex FFI code
+
+# Custom rules or overrides
+Style/HeredocIndent:
+  Enabled: false
+
+ameba:
+  color: true
+  formatter: progress
+  fail_level: Error

@@ -1,129 +1,281 @@
- require "./backend"
- require "./config"
- require "./encryption"
- require "./errors"
- require "./logging"
- require "./windows_backend"
+require "./backend"
+require "./config"
+require "./credential"
+require "./encryption"
+require "./errors"
+require "./file_backend"
+require "./logging"
 
- module Keyring
-   VERSION = "0.1.0"
+{% if flag?(:linux) %}
+  require "./linux_backend"
+{% end %}
 
-   class Keyring
-     getter backend : Backend
-     getter config : Config
+{% if flag?(:darwin) %}
+  require "./macos_backend"
+{% end %}
 
-     def initialize(config_path : String? = nil)
-       @config = config_path ? Config.load(config_path) : Config.load
-       setup_logging
-       @backend = get_preferred_backend
-       Log.info { "Initialized keyring with backend: #{@backend.class}" }
-     end
+{% if flag?(:windows) %}
+  require "./windows_backend"
+{% end %}
 
-     def get_password(service : String, username : String) : String?
-       Log.debug { "Getting password for #{service}:#{username}" }
-       if cred = get_credential(service, username)
-         return @config.encrypt_passwords ? cred.decrypt_password : cred.password
-       end
-     end
+module Keyring
+  VERSION = "0.1.0"
 
-     def set_password(service : String, username : String, password : String)
-       Log.debug { "Setting password for #{service}:#{username}" }
-       cred = Credential.new(
-         service: service,
-         username: username,
-         password: password,
-         encryption_key: @config.encryption_key
-       )
-       @backend.set_password(service, username, cred.password.not_nil!)
-     end
+  class Keyring
+    getter backend : Backend
+    getter config : Config
 
-     def delete_password(service : String, username : String)
-       Log.debug { "Deleting password for #{service}:#{username}" }
-       @backend.delete_password(service, username)
-     end
+    # Cache for backend availability checks across instances
+    @@availability_cache = Hash(String, Bool).new
+    # Test hook: override backend candidates list
+    @@candidates_override : Array(Backend.class)? = nil
 
-     def get_credential(service : String, username : String) : Credential?
-       @backend.get_credential(service, username)
-     end
+    # Test helpers (no-ops in production unless called explicitly)
+    def self.override_backend_candidates(candidates : Array(Backend.class)?)
+      @@candidates_override = candidates
+    end
 
-     def list_credentials : Array(Credential)
-       @backend.list_credentials
-     end
+    def self.reset_backend_overrides
+      @@candidates_override = nil
+      @@availability_cache.clear
+    end
 
-     def list_services : Array(String)
-       list_credentials.map(&.service).uniq
-     end
+    def initialize(config_path : String? = nil)
+      @config = config_path ? Config.load(config_path) : Config.load
+      ::Keyring.setup_logging(@config)
+      @backend = get_preferred_backend
+      Log.info { "Initialized keyring with backend: #{@backend.class}" }
+    end
 
-     def list_usernames(service : String) : Array(String)
-       list_credentials.select { |c| c.service == service }.map(&.username)
-     end
+    def get_password(service : String, username : String) : String?
+      validate_params(service, username)
+      Log.debug { "Getting password for #{service}:#{username}" }
+      return unless cred = get_credential(service, username)
+      @config.encrypt_passwords ? cred.decrypt_password : cred.password
+    end
 
-     def search(query : String) : Array(Credential)
-       list_credentials.select do |cred|
-         cred.service.includes?(query) ||
-         cred.username.includes?(query) ||
-         cred.metadata.values.any? { |v| v.includes?(query) }
-       end
-     end
-    
-      def advanced_search(
-    service : String? = nil,
-    username : String? = nil,
-    metadata : Hash(String, String)? = nil,
-    created_after : Time? = nil
-  ) : Array(Credential)
-    list_credentials.select do |cred|
-      (service.nil? || cred.service == service) &&
-      (username.nil? || cred.username == username) &&
-      (metadata.nil? || metadata.all? { |k, v| cred.metadata[k]? == v }) &&
-      (created_after.nil? || cred.created_at > created_after)
+    def set_password(service : String, username : String, password : String)
+      validate_params(service, username)
+      raise KeyringError.new("Password cannot be empty") if password.empty?
+      Log.debug { "Setting password for #{service}:#{username}" }
+      cred = Credential.new(
+        service: service,
+        username: username,
+        password: password,
+        encryption_key: @config.encryption_key
+      )
+      @backend.set_password(service, username, cred.password.not_nil!)
+    end
+
+    def update_password(service : String, username : String, new_password : String)
+      validate_params(service, username)
+      raise KeyringError.new("Password cannot be empty") if new_password.empty?
+      # Verify credential exists before updating
+      existing = get_credential(service, username)
+      raise KeyringError.new("Credential not found: #{service}:#{username}") unless existing
+
+      Log.debug { "Updating password for #{service}:#{username}" }
+      set_password(service, username, new_password)
+    end
+
+    def delete_password(service : String, username : String)
+      validate_params(service, username)
+      Log.debug { "Deleting password for #{service}:#{username}" }
+      @backend.delete_password(service, username)
+    end
+
+    private def validate_params(service : String, username : String)
+      raise KeyringError.new("Service name cannot be empty") if service.empty?
+      raise KeyringError.new("Username cannot be empty") if username.empty?
+    end
+
+    def get_credential(service : String, username : String) : Credential?
+      @backend.get_credential(service, username)
+    end
+
+    def list_credentials : Array(Credential)
+      @backend.list_credentials
+    end
+
+    def list_services : Array(String)
+      list_credentials.map(&.service).uniq!
+    end
+
+    def list_usernames(service : String) : Array(String)
+      list_credentials.select { |c| c.service == service }.map(&.username)
+    end
+
+    def search(query : String) : Array(Credential)
+      list_credentials.select do |cred|
+        cred.service.includes?(query) ||
+          cred.username.includes?(query) ||
+          cred.metadata.values.any?(&.includes?(query))
+      end
+    end
+
+    def advanced_search(
+      service : String? = nil,
+      username : String? = nil,
+      metadata : Hash(String, String)? = nil,
+      created_after : Time? = nil,
+    ) : Array(Credential)
+      list_credentials.select do |cred|
+        (service.nil? || cred.service == service) &&
+          (username.nil? || cred.username == username) &&
+          (metadata.nil? || metadata.all? { |k, v| cred.metadata[k]? == v }) &&
+          (created_after.nil? || cred.created_at > created_after)
+      end
+    end
+
+    def set_metadata(service : String, username : String, key : String, value : String)
+      Log.debug { "Setting metadata for #{service}:#{username} - #{key}" }
+      # If backend natively supports metadata, delegate to it
+      if @backend.supports_metadata?
+        @backend.set_metadata(service, username, key, value)
+        return
+      end
+      # Fallback: mutate credential object (works for FileBackend)
+      if cred = get_credential(service, username)
+        cred.add_metadata(key, value)
+        # Re-save the credential with updated metadata
+        set_password(service, username, cred.password.not_nil!)
+      else
+        raise KeyringError.new("Credential not found: #{service}:#{username}")
+      end
+    end
+
+    def export_credentials(path : String)
+      Log.info { "Exporting credentials to #{path}" }
+      File.write(path, list_credentials.to_json)
+    end
+
+    def import_credentials(path : String)
+      Log.info { "Importing credentials from #{path}" }
+      credentials = Array(Credential).from_json(File.read(path))
+      credentials.each do |cred|
+        set_password(cred.service, cred.username, cred.password.not_nil!)
+        cred.metadata.each do |k, v|
+          set_metadata(cred.service, cred.username, k, v)
+        end
+      end
+    end
+
+    private def get_preferred_backend : Backend
+      # 1) Construct candidate list for this platform (or test override)
+      candidates = @@candidates_override || begin
+        list = [] of Backend.class
+        {% if flag?(:windows) %}
+          list << WindowsBackend
+        {% end %}
+        {% if flag?(:darwin) %}
+          list << MacOsKeyChainBackend
+        {% end %}
+        {% if flag?(:linux) %}
+          list << LinuxSecretServiceBackend
+        {% end %}
+        list << FileBackend
+        list
+      end
+
+      # 2) Respect explicit preference if available
+      if preferred = @config.preferred_backend
+        if backend_class = candidates.find { |b| b.name.ends_with?(preferred) || b.name == preferred }
+          if available_cached?(backend_class)
+            Log.info { "Selecting preferred backend: #{backend_class.name}" }
+            return initialize_backend_with_retry(backend_class)
+          else
+            Log.warn { "Preferred backend #{preferred} not available" }
+          end
+        else
+          Log.warn { "Preferred backend #{preferred} not recognized for this platform" }
+        end
+      end
+
+      # 3) Apply configurable priority ordering if provided
+      ordered = apply_priority(candidates, @config.backend_priority)
+      Log.debug { "Backend selection order: #{ordered.map(&.name).join(", ")}" }
+
+      # 4) Iterate candidates and choose the first healthy backend
+      ordered.each do |backend_class|
+        next unless available_cached?(backend_class)
+        begin
+          backend = initialize_backend_with_retry(backend_class)
+          if backend_healthy?(backend)
+            Log.info { "Selected backend: #{backend_class.name}" }
+            return backend
+          else
+            Log.warn { "Backend health check failed for #{backend_class.name}, trying next" }
+          end
+        rescue ex
+          Log.warn { "Failed to initialize backend #{backend_class.name}: #{ex.message}. Trying next." }
+        end
+      end
+
+      raise NoBackendError.new("No suitable keyring backend found")
+    end
+
+    # Reorder candidates to honor configured priority. Unknown names are ignored.
+    private def apply_priority(candidates : Array(Backend.class), priority : Array(String)?) : Array(Backend.class)
+      return candidates unless priority && !priority.empty?
+      prio_names = priority.map(&.downcase)
+      selected = [] of Backend.class
+      # Add those listed in priority if present in candidates
+      prio_names.each do |name|
+        if backend = candidates.find { |b| b.name.downcase.ends_with?(name) || b.name.downcase == name }
+          selected << backend unless selected.includes?(backend)
+        end
+      end
+      # Append remaining candidates in their original order
+      candidates.each do |b|
+        selected << b unless selected.includes?(b)
+      end
+      selected
+    end
+
+    private def available_cached?(backend_class : Backend.class) : Bool
+      name = backend_class.name
+      if (cached = @@availability_cache[name]?) != nil
+        return cached.as(Bool)
+      end
+      available = false
+      begin
+        available = backend_class.available?
+      rescue
+        available = false
+      end
+      @@availability_cache[name] = available
+      available
+    end
+
+    private def initialize_backend_with_retry(backend_class : Backend.class, retries : Int32 = 1) : Backend
+      attempts = 0
+      last_error : Exception? = nil
+      while attempts <= retries
+        attempts += 1
+        begin
+          Log.debug { "Initializing backend #{backend_class.name} (attempt #{attempts})" }
+          return backend_class.new
+        rescue ex
+          last_error = ex
+          if attempts <= retries
+            Log.warn { "Initialization failed for #{backend_class.name}: #{ex.message}. Retrying..." }
+          end
+        end
+      end
+      raise last_error.not_nil!
+    end
+
+    private def backend_healthy?(backend : Backend) : Bool
+      # Lightweight health check: attempt a metadata-free call
+      backend.list_credentials
+      true
+    rescue ex
+      Log.warn { "Health check error for #{backend.class}: #{ex.message}" }
+      false
+    end
+
+    private def setup_logging
+      Keyring.setup_logging(@config)
     end
   end
-
-     def export_credentials(path : String)
-       Log.info { "Exporting credentials to #{path}" }
-       File.write(path, list_credentials.to_json)
-     end
-
-     def import_credentials(path : String)
-       Log.info { "Importing credentials from #{path}" }
-       credentials = Array(Credential).from_json(File.read(path))
-       credentials.each do |cred|
-         set_password(cred.service, cred.username, cred.password.not_nil!)
-         cred.metadata.each do |k, v|
-           set_metadata(cred.service, cred.username, k, v)
-         end
-       end
-     end
-
-     private def get_preferred_backend : Backend
-       backends = [
-         WindowsBackend,
-         MacOsKeyChainBackend,
-         LinuxSecretServiceBackend
-         FileBackend
-         # Add more backends here as they're implemented
-       ]
-
-       if preferred = @config.preferred_backend
-         backend_class = backends.find { |b| b.name.ends_with?(preferred) }
-         if backend_class && backend_class.available?
-           return backend_class.new
-         end
-         Log.warn { "Preferred backend #{preferred} not available" }
-       end
-
-       backends.each do |backend_class|
-         if backend_class.available?
-           return backend_class.new
-         end
-       end
-
-       raise NoBackendError.new("No suitable keyring backend found")
-     end
-
-     private def setup_logging
-       Keyring.setup_logging(@config)
-     end
-   end
- end
+end

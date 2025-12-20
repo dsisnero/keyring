@@ -4,6 +4,61 @@ require "colorize"
 
 module Keyring
   class CLI
+    class FinishedCLI < Exception
+      getter code : Int32
+
+      def initialize(@code : Int32 = 0); end
+    end
+
+    @@out : IO = STDOUT
+    @@err : IO = STDERR
+    @@password_provider : Proc(String?)? = nil
+
+    def self.set_io(out_io : IO, err_io : IO)
+      @@out = out_io
+      @@err = err_io
+    end
+
+    def self.reset_io
+      @@out = STDOUT
+      @@err = STDERR
+    end
+
+    def self.set_password_provider(&block : -> String?)
+      @@password_provider = block
+    end
+
+    def self.reset_password_provider
+      @@password_provider = nil
+    end
+
+    private def self.out_puts(obj)
+      @@out.puts obj
+    end
+
+    private def self.out_print(obj)
+      @@out.print obj
+    end
+
+    private def self.err_puts(obj)
+      @@err.puts obj
+    end
+
+    private def self.read_password : String?
+      if provider = @@password_provider
+        return provider.call
+      end
+      STDIN.noecho(&.gets).try(&.chomp)
+    end
+
+    private def self.terminate(code : Int32 = 0)
+      if ENV["KEYRING_TEST_CLI"]?
+        raise FinishedCLI.new(code)
+      else
+        exit(code)
+      end
+    end
+
     def self.run(args = ARGV)
       command = nil
       service = nil
@@ -32,98 +87,114 @@ module Keyring
         parser.on("-q QUERY", "--query=QUERY", "Search query") { |q| query = q }
         parser.on("-f FILE", "--file=FILE", "Import/export file path") { |f| export_path = import_path = f }
         parser.on("-h", "--help", "Show this help") do
-          puts parser
-          exit
+          out_puts parser
+          terminate(0)
         end
         parser.on("-v", "--version", "Show version") do
-          puts "Keyring version #{VERSION}"
-          exit
+          out_puts "Keyring version #{VERSION}"
+          terminate(0)
         end
 
         parser.invalid_option do |flag|
-          STDERR.puts "ERROR: #{flag} is not a valid option."
-          STDERR.puts parser
-          exit(1)
+          err_puts "ERROR: #{flag} is not a valid option."
+          err_puts parser
+          terminate(1)
         end
       end
 
       begin
         parser.parse(args)
+        # If no command and no args, show help and exit 0
+        if args.empty? && command.nil?
+          out_puts parser
+          terminate(0)
+        end
         keyring = Keyring.new(config_path)
 
         case command
         when "get"
           check_required_args(service: service, username: username)
-          if password = keyring.get_password(service, username)
-            puts password
+          s = service.not_nil!
+          u = username.not_nil!
+          if password = keyring.get_password(s, u)
+            out_puts password
           else
-            STDERR.puts "No password found".colorize(:red)
-            exit(1)
+            err_puts "No password found".colorize(:red)
+            terminate(1)
           end
         when "set"
           check_required_args(service: service, username: username)
+          s = service.not_nil!
+          u = username.not_nil!
           unless password
-            print "Enter password: "
-            password = STDIN.noecho(&.gets).try(&.chomp)
-            puts
+            out_print "Enter password: "
+            password = read_password
+            out_puts ""
           end
-          keyring.set_password(service, username, password.not_nil!)
-          puts "Password stored successfully".colorize(:green)
+          keyring.set_password(s, u, password.not_nil!)
+          out_puts "Password stored successfully".colorize(:green)
         when "delete"
           check_required_args(service: service, username: username)
-          keyring.delete_password(service, username)
-          puts "Password deleted successfully".colorize(:green)
+          s = service.not_nil!
+          u = username.not_nil!
+          keyring.delete_password(s, u)
+          out_puts "Password deleted successfully".colorize(:green)
         when "list"
           creds = keyring.list_credentials
           if creds.empty?
-            puts "No credentials found".colorize(:yellow)
+            out_puts "No credentials found".colorize(:yellow)
           else
-            puts "Credentials:".colorize(:cyan)
+            out_puts "Credentials:".colorize(:cyan)
             creds.each do |cred|
-              puts "  #{cred.service} - #{cred.username}".colorize(:white)
+              out_puts "  #{cred.service} - #{cred.username}".colorize(:white)
             end
           end
         when "search"
           check_required_args(query: query)
-          results = keyring.search(query)
+          q = query.not_nil!
+          results = keyring.search(q)
           if results.empty?
-            puts "No matching credentials found".colorize(:yellow)
+            out_puts "No matching credentials found".colorize(:yellow)
           else
-            puts "Search results:".colorize(:cyan)
+            out_puts "Search results:".colorize(:cyan)
             results.each do |cred|
-              puts "  #{cred.service} - #{cred.username}".colorize(:white)
+              out_puts "  #{cred.service} - #{cred.username}".colorize(:white)
             end
           end
         when "export"
           check_required_args(file: export_path)
-          keyring.export_credentials(export_path)
-          puts "Credentials exported successfully".colorize(:green)
+          f = export_path.not_nil!
+          keyring.export_credentials(f)
+          out_puts "Credentials exported successfully".colorize(:green)
         when "import"
           check_required_args(file: import_path)
-          keyring.import_credentials(import_path)
-          puts "Credentials imported successfully".colorize(:green)
+          f = import_path.not_nil!
+          keyring.import_credentials(f)
+          out_puts "Credentials imported successfully".colorize(:green)
         else
-          STDERR.puts "ERROR: No command specified"
-          STDERR.puts parser
-          exit(1)
+          err_puts "ERROR: No command specified"
+          err_puts parser
+          terminate(1)
         end
       rescue ex : OptionParser::InvalidOption
-        STDERR.puts "ERROR: #{ex.message}".colorize(:red)
-        STDERR.puts parser
-        exit(1)
-      rescue ex : Keyring::Error
-        STDERR.puts "ERROR: #{ex.message}".colorize(:red)
-        exit(1)
+        err_puts "ERROR: #{ex.message}".colorize(:red)
+        err_puts parser
+        terminate(1)
+      rescue ex : Error
+        err_puts "ERROR: #{ex.message}".colorize(:red)
+        terminate(1)
       end
     end
 
     private def self.check_required_args(**args)
       args.each do |name, value|
         if value.nil?
-          STDERR.puts "ERROR: #{name} is required".colorize(:red)
-          exit(1)
+          err_puts "ERROR: #{name} is required".colorize(:red)
+          terminate(1)
         end
       end
     end
   end
 end
+
+Keyring::CLI.run

@@ -1,5 +1,6 @@
 /docs/
 /lib/webmock/
+/lib/
 /bin/
 /.shards/
 *.dwarf
@@ -7,3 +8,39 @@
 .env
 lib/sodium
 vcpkg_installed
+
+# Development
+/.crystal/
+/.vscode/
+/.idea/
+.DS_Store
+*.swp
+*.swo
+*~
+.project
+
+# Logs
+*.log
+logs/
+
+# Coverage
+coverage/
+.coveralls.yml
+
+# Temporary files
+/tmp/
+*.tmp
+*.pid
+
+# Pre-commit hooks
+.pre-commit-config.yaml
+
+# Environment variables
+.env.*
+!.env.example
+
+# OS specific
+Thumbs.db
+
+# AI planning documents (ephemeral)
+history/

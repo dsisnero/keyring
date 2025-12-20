@@ -8,5 +8,16 @@ module Keyring
     abstract def delete_password(service : String, username : String)
     abstract def get_credential(service : String, username : String) : Credential?
     abstract def list_credentials : Array(Credential)
+
+    # Optional capabilities
+    def supports_metadata? : Bool
+      false
+    end
+
+    # Optional: store a metadata key/value for an existing credential
+    # Default: not supported
+    def set_metadata(service : String, username : String, key : String, value : String)
+      raise KeyringError.new("Metadata not supported by this backend")
+    end
   end
 end

@@ -1,7 +1,11 @@
 require "../spec_helper"
-require "../../src/keyring/windows_backend"
+
+{% if flag?(:windows) %}
+  require "../../src/keyring/windows_backend"
+{% end %}
 
 module Keyring
+  {% if flag?(:windows) %}
   describe WindowsBackend do
     backend = WindowsBackend.new
     test_service = "test_service"
@@ -106,4 +110,5 @@ module Keyring
       end
     {% end %}
   end
+  {% end %}
 end

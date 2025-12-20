@@ -1,0 +1,61 @@
+# Gitleaks configuration for Keyring project
+
+title = "Keyring Secrets Detection"
+
+[[rules]]
+description = "AWS Access Key"
+regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+tags = ["key", "AWS"]
+
+[[rules]]
+description = "AWS Secret Key"
+regex = '''(?i)aws(.{0,20})?['\"][0-9a-zA-Z\/+]{40}['\"]'''
+tags = ["key", "AWS"]
+
+[[rules]]
+description = "GitHub Token"
+regex = '''(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{36}'''
+tags = ["key", "GitHub"]
+
+[[rules]]
+description = "Generic API Key"
+regex = '''(?i)(api|key|token|secret|password)[\s]*[=:][\s]*['\"][a-z0-9_\-]{10,50}['\"]'''
+tags = ["key", "generic"]
+
+[[rules]]
+description = "SSH Private Key"
+regex = '''-----BEGIN [A-Z]+ PRIVATE KEY-----'''
+tags = ["key", "SSH"]
+
+[[rules]]
+description = "Encryption Key (Sodium/Argon2)"
+regex = '''(?i)(encryption|secret)[\s_-]*key[\s]*[=:][\s]*['\"][a-f0-9]{64}['\"]'''
+tags = ["key", "encryption"]
+
+# Allow test encryption keys in test files
+[[allowlist]]
+files = [
+    '''.*_spec\.cr$''',
+    '''spec/.*''',
+    '''test.*\.cr$'''
+]
+
+# Allow certain patterns in specific files
+[[allowlist]]
+paths = [
+    '''\.gitleaks\.toml$''',
+    '''CHANGELOG\.md$''',
+    '''CONTRIBUTING\.md$''',
+    '''SECURITY\.md$'''
+]
+
+# Allow SHA hashes (common in Crystal lock files)
+[[allowlist]]
+regexes = [
+    '''[a-f0-9]{64}''',  # SHA256
+    '''[a-f0-9]{40}'''   # SHA1
+]
+
+[[allowlist]]
+description = "Allow hex strings that look like object IDs"
+regex = '''[a-f0-9]{24}'''

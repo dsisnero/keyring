@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Run tests with GNOME Keyring
+  test:
+    build: .
+    image: keyring-linux-test
+    volumes:
+      - .:/workspace
+    command: with-keyring crystal spec
+    environment:
+      - TERM=xterm-256color
+
+  # Interactive development shell
+  dev:
+    build: .
+    image: keyring-linux-test
+    volumes:
+      - .:/workspace
+    command: bash
+    stdin_open: true
+    tty: true
+    environment:
+      - TERM=xterm-256color
+
+  # Run specific test file
+  test-linux:
+    build: .
+    image: keyring-linux-test
+    volumes:
+      - .:/workspace
+    command: with-keyring crystal spec spec/keyring/linux_backend_spec.cr
+    environment:
+      - TERM=xterm-256color
+
+  # Install dependencies
+  install:
+    build: .
+    image: keyring-linux-test
+    volumes:
+      - .:/workspace
+    command: shards install
+
+  # Build the project
+  build:
+    build: .
+    image: keyring-linux-test
+    volumes:
+      - .:/workspace
+    command: shards build

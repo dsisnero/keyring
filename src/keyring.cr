@@ -1,6 +1,20 @@
-# TODO: Write documentation for `Keyring`
-module Keyring
-  VERSION = "0.1.0"
+require "./keyring/backend"
+require "./keyring/config"
+require "./keyring/credential"
+require "./keyring/encryption"
+require "./keyring/errors"
+require "./keyring/file_backend"
+require "./keyring/logging"
+require "./keyring/keyring"
 
-  # TODO: Put your code here
-end
+{% if flag?(:linux) %}
+  require "./keyring/linux_backend"
+{% end %}
+
+{% if flag?(:darwin) %}
+  require "./keyring/macos_backend"
+{% end %}
+
+{% if flag?(:windows) %}
+  require "./keyring/windows_backend"
+{% end %}
