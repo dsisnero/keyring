@@ -11,8 +11,8 @@ module Keyring
               end
 
     level = ::Log::Severity.parse(config.log_level)
-    ::Log.setup do |c|
-      c.bind "*", level, backend
+    ::Log.setup do |log_config|
+      log_config.bind "*", level, backend
     end
   end
 end

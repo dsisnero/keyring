@@ -51,7 +51,7 @@ module Keyring
       validate_params(service, username)
       Log.debug { "Getting password for #{service}:#{username}" }
       return unless cred = get_credential(service, username)
-      @config.encrypt_passwords ? cred.decrypt_password : cred.password
+      @config.encrypt_passwords? ? cred.decrypt_password : cred.password
     end
 
     def set_password(service : String, username : String, password : String)
@@ -64,7 +64,7 @@ module Keyring
         password: password,
         encryption_key: @config.encryption_key
       )
-      @backend.set_password(service, username, cred.password.not_nil!)
+      @backend.set_password(service, username, cred.password.as(String))
     end
 
     def update_password(service : String, username : String, new_password : String)
@@ -102,7 +102,7 @@ module Keyring
     end
 
     def list_usernames(service : String) : Array(String)
-      list_credentials.select { |c| c.service == service }.map(&.username)
+      list_credentials.select { |cred| cred.service == service }.map(&.username)
     end
 
     def search(query : String) : Array(Credential)
@@ -135,13 +135,11 @@ module Keyring
         return
       end
       # Fallback: mutate credential object (works for FileBackend)
-      if cred = get_credential(service, username)
-        cred.add_metadata(key, value)
-        # Re-save the credential with updated metadata
-        set_password(service, username, cred.password.not_nil!)
-      else
-        raise KeyringError.new("Credential not found: #{service}:#{username}")
-      end
+      cred = get_credential(service, username)
+      raise KeyringError.new("Credential not found: #{service}:#{username}") unless cred
+      cred.add_metadata(key, value)
+      # Re-save the credential with updated metadata
+      set_password(service, username, cred.password.as(String))
     end
 
     def export_credentials(path : String)
@@ -153,7 +151,7 @@ module Keyring
       Log.info { "Importing credentials from #{path}" }
       credentials = Array(Credential).from_json(File.read(path))
       credentials.each do |cred|
-        set_password(cred.service, cred.username, cred.password.not_nil!)
+        set_password(cred.service, cred.username, cred.password.as(String))
         cred.metadata.each do |k, v|
           set_metadata(cred.service, cred.username, k, v)
         end
@@ -179,7 +177,7 @@ module Keyring
 
       # 2) Respect explicit preference if available
       if preferred = @config.preferred_backend
-        if backend_class = candidates.find { |b| b.name.ends_with?(preferred) || b.name == preferred }
+        if backend_class = candidates.find { |backend| backend.name.ends_with?(preferred) || backend.name == preferred }
           if available_cached?(backend_class)
             Log.info { "Selecting preferred backend: #{backend_class.name}" }
             return initialize_backend_with_retry(backend_class)
@@ -196,18 +194,18 @@ module Keyring
       Log.debug { "Backend selection order: #{ordered.map(&.name).join(", ")}" }
 
       # 4) Iterate candidates and choose the first healthy backend
-      ordered.each do |backend_class|
-        next unless available_cached?(backend_class)
+      ordered.each do |backend_class_candidate|
+        next unless available_cached?(backend_class_candidate)
         begin
-          backend = initialize_backend_with_retry(backend_class)
+          backend = initialize_backend_with_retry(backend_class_candidate)
           if backend_healthy?(backend)
-            Log.info { "Selected backend: #{backend_class.name}" }
+            Log.info { "Selected backend: #{backend_class_candidate.name}" }
             return backend
           else
-            Log.warn { "Backend health check failed for #{backend_class.name}, trying next" }
+            Log.warn { "Backend health check failed for #{backend_class_candidate.name}, trying next" }
           end
         rescue ex
-          Log.warn { "Failed to initialize backend #{backend_class.name}: #{ex.message}. Trying next." }
+          Log.warn { "Failed to initialize backend #{backend_class_candidate.name}: #{ex.message}. Trying next." }
         end
       end
 
@@ -216,18 +214,18 @@ module Keyring
 
     # Reorder candidates to honor configured priority. Unknown names are ignored.
     private def apply_priority(candidates : Array(Backend.class), priority : Array(String)?) : Array(Backend.class)
-      return candidates unless priority && !priority.empty?
+      return candidates if priority.nil? || priority.empty?
       prio_names = priority.map(&.downcase)
       selected = [] of Backend.class
       # Add those listed in priority if present in candidates
       prio_names.each do |name|
-        if backend = candidates.find { |b| b.name.downcase.ends_with?(name) || b.name.downcase == name }
+        if backend = candidates.find { |backend_candidate| backend_candidate.name.downcase.ends_with?(name) || backend_candidate.name.downcase == name }
           selected << backend unless selected.includes?(backend)
         end
       end
       # Append remaining candidates in their original order
-      candidates.each do |b|
-        selected << b unless selected.includes?(b)
+      candidates.each do |backend|
+        selected << backend unless selected.includes?(backend)
       end
       selected
     end
@@ -262,7 +260,7 @@ module Keyring
           end
         end
       end
-      raise last_error.not_nil!
+      raise last_error.as(KeyringError)
     end
 
     private def backend_healthy?(backend : Backend) : Bool

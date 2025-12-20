@@ -11,7 +11,7 @@ module Keyring
         cred.created_at.should be_a(Time)
         cred.modified_at.should be_a(Time)
         cred.metadata.should be_empty
-        cred.encrypted.should be_false
+        cred.encrypted?.should be_false
       end
 
       it "creates credential without password" do
@@ -25,7 +25,7 @@ module Keyring
         key = Encryption.generate_key
         cred = Credential.new("MyService", "myuser", "mypass", key)
 
-        cred.encrypted.should be_true
+        cred.encrypted?.should be_true
         cred.password.should_not eq("mypass")
         cred.password.should_not be_nil
       end
@@ -48,7 +48,7 @@ module Keyring
         cred = Credential.new("MyService", "myuser", "oldpass", key)
 
         cred.password = "newpass"
-        cred.encrypted.should be_true
+        cred.encrypted?.should be_true
         cred.password.should_not eq("newpass")
       end
     end

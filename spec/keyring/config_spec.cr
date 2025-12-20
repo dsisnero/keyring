@@ -21,7 +21,7 @@ module Keyring
         config = Config.new
         config.preferred_backend.should be_nil
         config.default_service.should be_nil
-        config.encrypt_passwords.should be_false # Default is false
+        config.encrypt_passwords?.should be_false # Default is false
         config.encryption_key.should be_nil
         config.log_level.should eq("INFO")
         config.log_file.should be_nil
@@ -48,7 +48,7 @@ module Keyring
         config = Config.load("/tmp/test_config.yml")
         config.preferred_backend.should eq("WindowsBackend")
         config.default_service.should eq("TestApp")
-        config.encrypt_passwords.should be_false
+        config.encrypt_passwords?.should be_false
         config.log_level.should eq("DEBUG")
 
         File.delete("/tmp/test_config.yml")
@@ -164,7 +164,7 @@ module Keyring
         ENV["KEYRING_ENCRYPT"] = "true"
         config = Config.new
         config.apply_env_overrides
-        config.encrypt_passwords.should be_true
+        config.encrypt_passwords?.should be_true
         ENV.delete("KEYRING_ENCRYPT")
       end
 

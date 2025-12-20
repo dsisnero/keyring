@@ -142,8 +142,8 @@ module Keyring
     # Note: This flag is kept for API compatibility but has no effect with C API implementation
     # The C API doesn't have a direct equivalent to the command-line -A flag
     # For development, use "Always Allow" in permission dialogs or code sign your app
-    # TODO: Implement proper kSecAttrAccessible support for access control
-    class_property allow_any_access : Bool = false
+    # Note: Implement proper kSecAttrAccessible support for access control
+    class_property? allow_any_access : Bool = false
 
     def self.available? : Bool
       {% if flag?(:darwin) %}

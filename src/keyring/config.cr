@@ -9,7 +9,7 @@ module Keyring
     property preferred_backend : String?
     property backend_priority : Array(String)?
     property default_service : String?
-    property encrypt_passwords : Bool
+    property? encrypt_passwords : Bool
     property encryption_key : String?
     property log_level : String
     property log_file : String?

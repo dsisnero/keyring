@@ -52,13 +52,11 @@ module Keyring
     end
 
     private def self.terminate(code : Int32 = 0)
-      if ENV["KEYRING_TEST_CLI"]?
-        raise FinishedCLI.new(code)
-      else
-        exit(code)
-      end
+      raise FinishedCLI.new(code) if ENV["KEYRING_TEST_CLI"]?
+      exit(code)
     end
 
+    # ameba:disable Metrics/CyclomaticComplexity
     def self.run(args = ARGV)
       command = nil
       service = nil
@@ -69,35 +67,35 @@ module Keyring
       export_path = nil
       import_path = nil
 
-      parser = OptionParser.new do |parser|
-        parser.banner = "Usage: keyring [command] [options]"
+      parser = OptionParser.new do |opts|
+        opts.banner = "Usage: keyring [command] [options]"
 
-        parser.on("get", "Get a password") { command = "get" }
-        parser.on("set", "Set a password") { command = "set" }
-        parser.on("delete", "Delete a password") { command = "delete" }
-        parser.on("list", "List all credentials") { command = "list" }
-        parser.on("search", "Search credentials") { command = "search" }
-        parser.on("export", "Export credentials") { command = "export" }
-        parser.on("import", "Import credentials") { command = "import" }
+        opts.on("get", "Get a password") { command = "get" }
+        opts.on("set", "Set a password") { command = "set" }
+        opts.on("delete", "Delete a password") { command = "delete" }
+        opts.on("list", "List all credentials") { command = "list" }
+        opts.on("search", "Search credentials") { command = "search" }
+        opts.on("export", "Export credentials") { command = "export" }
+        opts.on("import", "Import credentials") { command = "import" }
 
-        parser.on("-s NAME", "--service=NAME", "Service name") { |s| service = s }
-        parser.on("-u USER", "--username=USER", "Username") { |u| username = u }
-        parser.on("-p PASS", "--password=PASS", "Password") { |p| password = p }
-        parser.on("-c PATH", "--config=PATH", "Config file path") { |c| config_path = c }
-        parser.on("-q QUERY", "--query=QUERY", "Search query") { |q| query = q }
-        parser.on("-f FILE", "--file=FILE", "Import/export file path") { |f| export_path = import_path = f }
-        parser.on("-h", "--help", "Show this help") do
-          out_puts parser
+        opts.on("-s NAME", "--service=NAME", "Service name") { |service_name| service = service_name }
+        opts.on("-u USER", "--username=USER", "Username") { |user| username = user }
+        opts.on("-p PASS", "--password=PASS", "Password") { |pass| password = pass }
+        opts.on("-c PATH", "--config=PATH", "Config file path") { |config| config_path = config }
+        opts.on("-q QUERY", "--query=QUERY", "Search query") { |search_query| query = search_query }
+        opts.on("-f FILE", "--file=FILE", "Import/export file path") { |file_path| export_path = import_path = file_path }
+        opts.on("-h", "--help", "Show this help") do
+          out_puts opts
           terminate(0)
         end
-        parser.on("-v", "--version", "Show version") do
+        opts.on("-v", "--version", "Show version") do
           out_puts "Keyring version #{VERSION}"
           terminate(0)
         end
 
-        parser.invalid_option do |flag|
+        opts.invalid_option do |flag|
           err_puts "ERROR: #{flag} is not a valid option."
-          err_puts parser
+          err_puts opts
           terminate(1)
         end
       end
@@ -114,8 +112,8 @@ module Keyring
         case command
         when "get"
           check_required_args(service: service, username: username)
-          s = service.not_nil!
-          u = username.not_nil!
+          s = service.as(String)
+          u = username.as(String)
           if password = keyring.get_password(s, u)
             out_puts password
           else
@@ -124,19 +122,19 @@ module Keyring
           end
         when "set"
           check_required_args(service: service, username: username)
-          s = service.not_nil!
-          u = username.not_nil!
+          s = service.as(String)
+          u = username.as(String)
           unless password
             out_print "Enter password: "
             password = read_password
             out_puts ""
           end
-          keyring.set_password(s, u, password.not_nil!)
+          keyring.set_password(s, u, password.as(String))
           out_puts "Password stored successfully".colorize(:green)
         when "delete"
           check_required_args(service: service, username: username)
-          s = service.not_nil!
-          u = username.not_nil!
+          s = service.as(String)
+          u = username.as(String)
           keyring.delete_password(s, u)
           out_puts "Password deleted successfully".colorize(:green)
         when "list"
@@ -151,7 +149,7 @@ module Keyring
           end
         when "search"
           check_required_args(query: query)
-          q = query.not_nil!
+          q = query.as(String)
           results = keyring.search(q)
           if results.empty?
             out_puts "No matching credentials found".colorize(:yellow)
@@ -163,12 +161,12 @@ module Keyring
           end
         when "export"
           check_required_args(file: export_path)
-          f = export_path.not_nil!
+          f = export_path.as(String)
           keyring.export_credentials(f)
           out_puts "Credentials exported successfully".colorize(:green)
         when "import"
           check_required_args(file: import_path)
-          f = import_path.not_nil!
+          f = import_path.as(String)
           keyring.import_credentials(f)
           out_puts "Credentials imported successfully".colorize(:green)
         else

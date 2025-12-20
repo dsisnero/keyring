@@ -226,7 +226,6 @@ module Keyring
 
     private def cleanup_old_backups
       # Keep only the most recent backup
-      backup_path = "#{@storage_path}.backup"
 
       # Remove numbered backups if they exist
       10.times do |i|

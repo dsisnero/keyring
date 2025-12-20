@@ -12,7 +12,7 @@ module Keyring
     property created_at : Time
     property modified_at : Time
     property metadata : Hash(String, String)
-    property encrypted : Bool
+    property? encrypted : Bool
 
     @[JSON::Field(ignore: true)]
     getter encryption_key : String?
@@ -44,13 +44,17 @@ module Keyring
 
     private def encrypt_if_needed
       return if !@password || @encrypted || !@encryption_key
-      @password = Encryption.encrypt(@password.not_nil!, @encryption_key.not_nil!)
+      password = @password.as(String)
+      encryption_key = @encryption_key.as(String)
+      @password = Encryption.encrypt(password, encryption_key)
       @encrypted = true
     end
 
     def decrypt_password : String?
       return @password if !@encrypted || !@password || !@encryption_key
-      Encryption.decrypt(@password.not_nil!, @encryption_key.not_nil!)
+      password = @password.as(String)
+      encryption_key = @encryption_key.as(String)
+      Encryption.decrypt(password, encryption_key)
     end
 
     def to_s(io : IO)
