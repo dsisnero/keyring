@@ -1,6 +1,5 @@
-# Dockerfile for testing Linux backend with GNOME Keyring
-ARG BASE_IMAGE=crystallang/crystal:latest
-FROM ${BASE_IMAGE}
+# Dockerfile for testing Linux backend with GNOME Keyring (ARM64 compatible)
+FROM debian:bookworm-slim
 
 # Avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
@@ -27,6 +26,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dbus \
     dbus-x11 \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Crystal via official repository
+RUN apt-get update && apt-get install -y gnupg \
+    && curl -fsSL https://archive.keyring.crystal-lang.org/gpg | gpg --dearmor -o /usr/share/keyrings/crystal-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/crystal-keyring.gpg] https://archive.keyring.crystal-lang.org/debian/ bookworm main" > /etc/apt/sources.list.d/crystal.list \
+    && apt-get update \
+    && apt-get install -y crystal
 
 # Verify Crystal installation
 RUN crystal --version
@@ -61,7 +67,3 @@ kill $KEYRING_PID $DBUS_PID 2>/dev/null || true\n\
 
 # Default command: run tests
 CMD ["with-keyring", "crystal", "spec"]
-
-# For interactive development:
-# docker run -it --rm -v $(pwd):/workspace keyring-linux-test bash
-# Then run: with-keyring crystal spec

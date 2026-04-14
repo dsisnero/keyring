@@ -1,5 +1,5 @@
-# Dockerfile for testing Linux backend with GNOME Keyring
-ARG BASE_IMAGE=crystallang/crystal:latest
+# Dockerfile for testing Linux backend with GNOME Keyring (ARM64)
+ARG BASE_IMAGE=ubuntu:24.04
 FROM ${BASE_IMAGE}
 
 # Avoid interactive prompts
@@ -26,6 +26,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # D-Bus for Secret Service communication
     dbus \
     dbus-x11 \
+    # Crystal language
+    crystal \
     && rm -rf /var/lib/apt/lists/*
 
 # Verify Crystal installation
@@ -61,7 +63,3 @@ kill $KEYRING_PID $DBUS_PID 2>/dev/null || true\n\
 
 # Default command: run tests
 CMD ["with-keyring", "crystal", "spec"]
-
-# For interactive development:
-# docker run -it --rm -v $(pwd):/workspace keyring-linux-test bash
-# Then run: with-keyring crystal spec

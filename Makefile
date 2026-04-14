@@ -9,7 +9,7 @@ DOCKER := $(shell command -v docker 2> /dev/null)
 
 ifdef CONTAINER
     CONTAINER_ENGINE = container
-    BUILD_CMD = container build --tag keyring-linux-test --file Dockerfile .
+    BUILD_CMD = container build --tag keyring-linux-test --file Dockerfile.linux .
     RUN_CMD = container run --rm -v $(PWD):/workspace keyring-linux-test
     RUN_INTERACTIVE_CMD = container run --rm -it -v $(PWD):/workspace keyring-linux-test
     CLEAN_CMD = container image delete keyring-linux-test 2>/dev/null || true
