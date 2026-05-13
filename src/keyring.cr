@@ -12,6 +12,7 @@ require "./keyring/platform"
 require "./keyring/keyring"
 
 {% if flag?(:linux) %}
+  require "./keyring/kwallet_backend"
   require "./keyring/linux_backend"
 {% end %}
 

@@ -8,6 +8,7 @@ require "./file_backend"
 require "./logging"
 
 {% if flag?(:linux) %}
+  require "./kwallet_backend"
   require "./linux_backend"
 {% end %}
 
@@ -192,6 +193,7 @@ module Keyring
         {% end %}
         {% if flag?(:linux) %}
           list << LinuxSecretServiceBackend
+          list << KWalletBackend
         {% end %}
         list << FileBackend
         list

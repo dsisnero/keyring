@@ -19,7 +19,7 @@ keyring.backends.libsecret.Keyring	class	ported	src/keyring/linux_backend.cr	Lin
 keyring.backends.null.Keyring	class	ported	src/keyring/null_backend.cr	Null/degenerate backend
 keyring.backends.chainer.ChainerBackend	class	ported	src/keyring/chainer_backend.cr	Chained backend, iterates multiple backends in sequence
 keyring.backends.fail.Keyring	class	ported	src/keyring/fail_backend.cr	Fail backend (always raises)
-keyring.backends.kwallet.Keyring	class	intentional_divergence	-	KDE KWallet not needed: Crystal Linux backend uses SecretService which covers KDE
+keyring.backends.kwallet.Keyring	class	ported	src/keyring/kwallet_backend.cr	KWallet via D-Bus qdbus CLI; KDE5 and KDE4 support
 keyring.cli.main	function	ported	src/keyring/cli.cr	CLI entry point (get, set, delete, list, search, export, import, config, generate-key)
 keyring.completion	module	skipped	-	Crystal CLI uses OptionParser; tab completion TBD if demand arises
 keyring.devpi_client	module	skipped	-	DevPI-specific client; not applicable to Crystal ecosystem
