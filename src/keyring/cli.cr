@@ -1,4 +1,6 @@
 require "option_parser"
+require "json"
+require "base64"
 require "./keyring"
 require "colorize"
 
@@ -66,6 +68,7 @@ module Keyring
       query = nil
       export_path = nil
       import_path = nil
+      output_format = "plain"
 
       parser = OptionParser.new do |opts|
         opts.banner = "Usage: keyring [command] [options]"
@@ -77,6 +80,8 @@ module Keyring
         opts.on("search", "Search credentials") { command = "search" }
         opts.on("export", "Export credentials") { command = "export" }
         opts.on("import", "Import credentials") { command = "import" }
+        opts.on("config", "Manage configuration") { command = "config" }
+        opts.on("generate-key", "Generate an encryption key") { command = "generate-key" }
 
         opts.on("-s NAME", "--service=NAME", "Service name") { |service_name| service = service_name }
         opts.on("-u USER", "--username=USER", "Username") { |user| username = user }
@@ -84,6 +89,7 @@ module Keyring
         opts.on("-c PATH", "--config=PATH", "Config file path") { |config| config_path = config }
         opts.on("-q QUERY", "--query=QUERY", "Search query") { |search_query| query = search_query }
         opts.on("-f FILE", "--file=FILE", "Import/export file path") { |file_path| export_path = import_path = file_path }
+        opts.on("--output=FORMAT", "Output format: plain or json") { |format| output_format = format }
         opts.on("-h", "--help", "Show this help") do
           out_puts opts
           terminate(0)
@@ -115,7 +121,11 @@ module Keyring
           s = service.as(String)
           u = username.as(String)
           if password = keyring.get_password(s, u)
-            out_puts password
+            if output_format == "json"
+              out_puts({"service" => s, "username" => u, "password" => password}.to_json)
+            else
+              out_puts password
+            end
           else
             err_puts "No password found".colorize(:red)
             terminate(1)
@@ -139,7 +149,9 @@ module Keyring
           out_puts "Password deleted successfully".colorize(:green)
         when "list"
           creds = keyring.list_credentials
-          if creds.empty?
+          if output_format == "json"
+            out_puts creds.to_json
+          elsif creds.empty?
             out_puts "No credentials found".colorize(:yellow)
           else
             out_puts "Credentials:".colorize(:cyan)
@@ -151,7 +163,9 @@ module Keyring
           check_required_args(query: query)
           q = query.as(String)
           results = keyring.search(q)
-          if results.empty?
+          if output_format == "json"
+            out_puts results.to_json
+          elsif results.empty?
             out_puts "No matching credentials found".colorize(:yellow)
           else
             out_puts "Search results:".colorize(:cyan)
@@ -169,6 +183,26 @@ module Keyring
           f = import_path.as(String)
           keyring.import_credentials(f)
           out_puts "Credentials imported successfully".colorize(:green)
+        when "config"
+          sub_action = args[0]? || "show"
+          case sub_action
+          when "show"
+            cfg = keyring.config
+            out_puts({
+              "preferred_backend" => cfg.preferred_backend,
+              "backend_priority"  => cfg.backend_priority,
+              "default_service"   => cfg.default_service,
+              "encrypt_passwords" => cfg.encrypt_passwords?,
+              "log_level"         => cfg.log_level,
+              "log_file"          => cfg.log_file,
+            }.to_json)
+          else
+            err_puts "ERROR: Unknown config sub-command: #{sub_action}"
+            terminate(1)
+          end
+        when "generate-key"
+          key = Encryption.generate_key
+          out_puts key
         else
           err_puts "ERROR: No command specified"
           err_puts parser
@@ -195,4 +229,4 @@ module Keyring
   end
 end
 
-Keyring::CLI.run
+Keyring::CLI.run if PROGRAM_NAME == "keyring"

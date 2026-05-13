@@ -135,5 +135,48 @@ module Keyring
       CLI.run(["set", "-s", service, "-u", user])
       Keyring.new.get_password(service, user).should eq("pw_int")
     end
+
+    it "get with --output json returns JSON format" do
+      stdout_io = IO::Memory.new; stderr_io = IO::Memory.new
+      CLI.set_io(stdout_io, stderr_io)
+      service = "cli-json-#{Random.rand(10_000)}"
+      CLI.run(["set", "-s", service, "-u", "json-user", "-p", "json-pass"])
+      stdout_io.clear
+      CLI.run(["get", "-s", service, "-u", "json-user", "--output", "json"])
+      output = stdout_io.to_s
+      output.includes?("service").should be_true
+      output.includes?("json-user").should be_true
+      output.includes?("json-pass").should be_true
+    end
+
+    it "list with --output json returns JSON array" do
+      stdout_io = IO::Memory.new; stderr_io = IO::Memory.new
+      CLI.set_io(stdout_io, stderr_io)
+      service = "cli-json-list-#{Random.rand(10_000)}"
+      CLI.run(["set", "-s", service, "-u", "a", "-p", "pa"])
+      stdout_io.clear
+      CLI.run(["list", "--output", "json"])
+      output = stdout_io.to_s
+      output.starts_with?("[").should be_true
+      output.includes?("service").should be_true
+    end
+
+    it "generate-key command outputs a base64 key" do
+      stdout_io = IO::Memory.new; stderr_io = IO::Memory.new
+      CLI.set_io(stdout_io, stderr_io)
+      CLI.run(["generate-key"])
+      output = stdout_io.to_s.strip
+      output.should_not be_empty
+      # Base64 encoded 32-byte key
+      Base64.decode(output).size.should eq(32)
+    end
+
+    it "config show outputs current config" do
+      stdout_io = IO::Memory.new; stderr_io = IO::Memory.new
+      CLI.set_io(stdout_io, stderr_io)
+      CLI.run(["config", "show"])
+      output = stdout_io.to_s
+      output.includes?("preferred_backend").should be_true
+    end
   end
 end

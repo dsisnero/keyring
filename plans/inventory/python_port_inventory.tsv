@@ -21,7 +21,7 @@ keyring.backends.chainer.ChainerBackend	class	ported	src/keyring/chainer_backend
 keyring.backends.fail.Keyring	class	ported	src/keyring/fail_backend.cr	Fail backend (always raises)
 keyring.backends.kwallet.Keyring	class	missing	-	KDE KWallet backend
 keyring.cli.main	function	ported	src/keyring/cli.cr	CLI entry point (get, set, delete, list)
-keyring.completion	module	missing	-	Shell completion
+keyring.completion	module	missing	-	Shell completion (CLI enhanced with --output json, config, generate-key)
 keyring.devpi_client	module	missing	-	DevPI client integration
 keyring.http	module	missing	-	HTTP backend integration
 keyring.testing.backend	module	ported	spec/keyring/backend_contract_spec.cr	BackendBasicTests: 13 contract tests per backend
