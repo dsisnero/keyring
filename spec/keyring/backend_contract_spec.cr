@@ -1,7 +1,20 @@
 require "../spec_helper"
 
 module Keyring
-  # Minimal contract tests that every backend should satisfy
+  UNICODE_CHARS = (
+    "זהכיףסתםלשמועאיךתנצחקרפדעץטובבגן" \
+    "ξεσκεπάζωτηνψυχοφθόραβδελυγμία" \
+    "Съешьжеещёэтихмягкихфранцузскихбулокдавыпейчаю" \
+    "Жълтатадюлябешещастливачепухъткойтоцъфназамръзнакатогьон"
+  )
+
+  DIFFICULT_CHARS = " \t\n\r\f\v!\"\#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
+  ALPHABET        = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+  def self.random_contract_str(k : Int32, source : String = ALPHABET) : String
+    String.build(k) { |io| k.times { io << source[Random.rand(source.size)] } }
+  end
+
   abstract struct BackendFactory
     abstract def make_backend : Backend
     abstract def name : String
@@ -31,6 +44,9 @@ module Keyring
     end
   end
 
+  # Run full backend contract test suite.
+  # Original 3 Crystal tests + 10 upstream tests from
+  # keyring/testing/backend.py BackendBasicTests (v25.7.0)
   def self.run_backend_contract(factory : BackendFactory)
     describe "Backend contract: #{factory.name}" do
       it "stores, retrieves, updates, deletes passwords" do
@@ -72,15 +88,134 @@ module Keyring
         unwrapped.username.should eq(user)
         unwrapped.password.should eq("pw")
       end
+
+      # -- Upstream BackendBasicTests (v25.7.0) --
+
+      it "test_password_set_get" do
+        backend = factory.make_backend
+        pw = random_contract_str(20)
+        un = random_contract_str(20)
+        sv = random_contract_str(20)
+        backend.get_password(sv, un).should be_nil
+        backend.set_password(sv, un, pw)
+        backend.get_password(sv, un).should eq(pw)
+        backend.set_password(sv, un, "")
+        backend.get_password(sv, un).should eq("")
+        backend.delete_password(sv, un)
+      end
+
+      it "test_difficult_chars" do
+        backend = factory.make_backend
+        pw = random_contract_str(20, DIFFICULT_CHARS)
+        un = random_contract_str(20, DIFFICULT_CHARS)
+        sv = random_contract_str(20, DIFFICULT_CHARS)
+        backend.get_password(sv, un).should be_nil
+        backend.set_password(sv, un, pw)
+        backend.get_password(sv, un).should eq(pw)
+        backend.delete_password(sv, un)
+      end
+
+      it "test_delete_present" do
+        backend = factory.make_backend
+        pw = random_contract_str(20, DIFFICULT_CHARS)
+        un = random_contract_str(20, DIFFICULT_CHARS)
+        sv = random_contract_str(20, DIFFICULT_CHARS)
+        backend.set_password(sv, un, pw)
+        backend.delete_password(sv, un)
+        backend.get_password(sv, un).should be_nil
+      end
+
+      it "test_delete_not_present" do
+        backend = factory.make_backend
+        un = random_contract_str(20)
+        sv = random_contract_str(20)
+        expect_raises(PasswordDeleteError) do
+          backend.delete_password(sv, un)
+        end
+      end
+
+      it "test_delete_one_in_group" do
+        backend = factory.make_backend
+        un1 = random_contract_str(20)
+        un2 = random_contract_str(20)
+        pw = random_contract_str(20)
+        sv = random_contract_str(20)
+        backend.set_password(sv, un1, pw)
+        backend.set_password(sv, un2, pw)
+        backend.delete_password(sv, un1)
+        backend.get_password(sv, un2).should eq(pw)
+        backend.delete_password(sv, un2)
+      end
+
+      it "test_unicode_chars" do
+        backend = factory.make_backend
+        pw = random_contract_str(20, UNICODE_CHARS)
+        un = random_contract_str(20, UNICODE_CHARS)
+        sv = random_contract_str(20, UNICODE_CHARS)
+        backend.get_password(sv, un).should be_nil
+        backend.set_password(sv, un, pw)
+        backend.get_password(sv, un).should eq(pw)
+        backend.delete_password(sv, un)
+      end
+
+      it "test_unicode_and_ascii_chars" do
+        backend = factory.make_backend
+        source = random_contract_str(10, UNICODE_CHARS) + random_contract_str(10) + random_contract_str(10, DIFFICULT_CHARS)
+        pw = random_contract_str(20, source)
+        un = random_contract_str(20, source)
+        sv = random_contract_str(20, source)
+        backend.get_password(sv, un).should be_nil
+        backend.set_password(sv, un, pw)
+        backend.get_password(sv, un).should eq(pw)
+        backend.delete_password(sv, un)
+      end
+
+      it "test_different_user" do
+        backend = factory.make_backend
+        backend.set_password("service1", "user1", "password1")
+        backend.set_password("service1", "user2", "password2")
+        backend.get_password("service1", "user1").should eq("password1")
+        backend.get_password("service1", "user2").should eq("password2")
+        backend.set_password("service2", "user3", "password3")
+        backend.get_password("service1", "user1").should eq("password1")
+        backend.delete_password("service1", "user1")
+        backend.delete_password("service1", "user2")
+        backend.delete_password("service2", "user3")
+      end
+
+      it "test_credential" do
+        backend = factory.make_backend
+        cred = backend.get_credential("service", "nonexistent")
+        cred.should be_nil
+
+        backend.set_password("service1", "user1", "password1")
+        backend.set_password("service1", "user2", "password2")
+
+        cred = backend.get_credential("service1", "user2")
+        cred.should_not be_nil
+        cred.try(&.password).should eq("password2")
+        backend.delete_password("service1", "user1")
+        backend.delete_password("service1", "user2")
+      end
+
+      it "test_wrong_username_returns_none" do
+        backend = factory.make_backend
+        sv = "test_wrong_username_returns_none"
+        backend.get_credential(sv, "nobody").should be_nil
+        backend.set_password(sv, "user1", "password1")
+        backend.set_password(sv, "user2", "password2")
+        backend.get_credential(sv, "user1").try(&.password).should eq("password1")
+        backend.get_credential(sv, "nobody!").should be_nil
+        backend.delete_password(sv, "user1")
+        backend.delete_password(sv, "user2")
+      end
     end
   end
 
   describe "Backend contract suite" do
-    # Run against MockBackend
     run_backend_contract(MockBackendFactory.new)
   end
 
-  # Run against FileBackend using temp dir (separate group)
   describe "Backend contract: FileBackend" do
     dir = "/tmp/keyring-file-contract-#{Random.rand(1_000_000)}"
     Dir.mkdir_p(dir)
