@@ -29,29 +29,25 @@ RUN crystal --version
 # Set up workspace
 WORKDIR /workspace
 
-# Set up D-Bus session bus (required for GNOME Keyring)
-ENV DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
-
 # Create script to start D-Bus and GNOME Keyring
-RUN echo '#!/bin/bash\n\
+RUN printf '#!/bin/bash\n\
 set -e\n\
-# Create run directory\n\
-mkdir -p /run/user/1000\n\
-chmod 700 /run/user/1000\n\
-# Start D-Bus daemon\n\
-dbus-daemon --session --address=$DBUS_SESSION_BUS_ADDRESS --nofork --nopidfile --syslog-only &\n\
-DBUS_PID=$!\n\
+# Start D-Bus session daemon, capture its address\n\
+export DBUS_SESSION_BUS_ADDRESS=$(dbus-daemon --session --print-address --fork)\n\
+echo "D-Bus session address: $DBUS_SESSION_BUS_ADDRESS"\n\
 sleep 1\n\
 # Unlock keyring with empty password for testing\n\
 echo -n "" | gnome-keyring-daemon --unlock\n\
-# Start GNOME Keyring\n\
+# Start GNOME Keyring daemon in background\n\
 gnome-keyring-daemon --start --components=secrets &\n\
 KEYRING_PID=$!\n\
-sleep 1\n\
+sleep 2\n\
 # Run command\n\
 "$@"\n\
+ret=$?\n\
 # Cleanup\n\
-kill $KEYRING_PID $DBUS_PID 2>/dev/null || true\n\
+kill $KEYRING_PID 2>/dev/null || true\n\
+exit $ret\n\
 ' > /usr/local/bin/with-keyring && chmod +x /usr/local/bin/with-keyring
 
 # Default command: run tests
