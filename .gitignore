@@ -1,5 +1,5 @@
-/docs/
 /lib/webmock/
+/.crystal-cache/
 /lib/
 /bin/
 /.shards/

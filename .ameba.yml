@@ -1,4 +1,22 @@
 # Ameba configuration for Keyring project
+Version: "1.7.0-dev"
+
+Excluded:
+  - temp/**/*
+  - lib/**/*
+  - vendor/**/*
+  - spec/**/*
+  - test_list_credentials.cr
+  - test_list_simple.cr
+  - test_dev_mode.cr
+  - test_file_backend.cr
+  - test_macos_backend.cr
+  - ".github/"
+  - "bin/"
+  - "scripts/"
+  - "src/keyring/linux_backend.cr"
+  - "src/keyring/macos_backend.cr"
+  - "src/keyring/windows_backend.cr"
 
 # Enable/disable entire inspection
 All:
@@ -375,14 +393,7 @@ Performance/TimesMap:
   Enabled: true
 
 # Exclude certain files/directories
-exclude:
-  - "spec/**/*.cr"          # Test files
-  - ".github/"              # GitHub workflows
-  - "bin/"                  # Binary directory
-  - "lib/"                  # Dependencies
-  - "src/keyring/linux_backend.cr"  # Complex FFI code
-  - "src/keyring/macos_backend.cr"  # Complex FFI code
-  - "src/keyring/windows_backend.cr" # Complex FFI code
+# (managed via Excluded block at top of file)
 
 # Custom rules or overrides
 Style/HeredocIndent:

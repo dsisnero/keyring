@@ -20,7 +20,7 @@ credentials = keyring.list_credentials
 puts "✓ List returned #{credentials.size} credentials"
 
 # Find our credential
-found = credentials.find { |c| c.service == test_service }
+found = credentials.find { |cred| cred.service == test_service }
 if found
   puts "✓ Found our credential!"
   puts "  Service: #{found.service}"

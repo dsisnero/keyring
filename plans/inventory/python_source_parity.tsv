@@ -1,0 +1,41 @@
+# source_api_id	status	crystal_refs	notes
+keyring.backend.KeyringBackend	ported	src/keyring/backend.cr	Base backend class
+keyring.backend.KeyringBackend.get_password	ported	src/keyring/backend.cr	Abstract method
+keyring.backend.KeyringBackend.set_password	ported	src/keyring/backend.cr	Abstract method
+keyring.backend.KeyringBackend.delete_password	ported	src/keyring/backend.cr	Abstract method
+keyring.backend.KeyringBackend.get_credential	ported	src/keyring/backend.cr	Optional method
+keyring.backend.KeyringBackend.set_properties_from_env	missing	-	Environment variable config
+keyring.backend.KeyringBackend.priority	mapped	src/keyring/backend.cr	Property for backend priority
+keyring.core.get_password	ported	src/keyring/keyring.cr	Module-level function
+keyring.core.set_password	ported	src/keyring/keyring.cr	Module-level function
+keyring.core.delete_password	ported	src/keyring/keyring.cr	Module-level function
+keyring.core.get_credential	ported	src/keyring/keyring.cr	Module-level function
+keyring.core.set_keyring	missing	-	Programmatic backend selection
+keyring.core.get_keyring	missing	-	Get current backend instance
+keyring.core.load_config	missing	-	Load keyringrc.cfg
+keyring.core.load_env	missing	-	Load PYTHON_KEYRING_BACKEND env
+keyring.credentials.Credential	ported	src/keyring/credential.cr	Credential object
+keyring.credentials.SimpleCredential	missing	-	Simple credential variant
+keyring.errors.KeyringError	ported	src/keyring/errors.cr	Base exception
+keyring.errors.InitError	ported	src/keyring/errors.cr	Init exception
+keyring.errors.PasswordSetError	ported	src/keyring/errors.cr	Set exception
+keyring.errors.PasswordDeleteError	ported	src/keyring/errors.cr	Delete exception
+keyring.backends.macOS.Keyring	ported	src/keyring/macos_backend.cr	macOS Keychain implementation
+keyring.backends.Windows.Keyring	ported	src/keyring/windows_backend.cr	Windows implementation
+keyring.backends.SecretService.Keyring	ported	src/keyring/linux_backend.cr	Linux implementation
+keyring.backends.libsecret.Keyring	ported	src/keyring/linux_backend.cr	Linux libsecret variant
+keyring.backends.null.Keyring	missing	-	Null backend
+keyring.backends.chainer.ChainerBackend	missing	-	Chained backend
+keyring.backends.fail.Keyring	missing	-	Fail backend
+keyring.backends.kwallet.Keyring	missing	-	KWallet backend
+keyring.cli.main	ported	src/keyring/cli.cr	CLI entry
+keyring.cli.get_password	ported	src/keyring/cli.cr	CLI get command
+keyring.cli.set_password	ported	src/keyring/cli.cr	CLI set command
+keyring.cli.delete_password	ported	src/keyring/cli.cr	CLI delete command
+keyring.cli.list_credentials	ported	src/keyring/cli.cr	CLI list command
+keyring.completion	missing	-	Shell completion module
+keyring.devpi_client	missing	-	DevPI client
+keyring.http	missing	-	HTTP backend
+keyring.testing.backend.BackendBasicTests	missing	-	Backend test suite
+keyring.testing.util	missing	-	Test utilities
+keyring.util.platform_	missing	-	Platform detection

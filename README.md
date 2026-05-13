@@ -4,7 +4,9 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Crystal](https://img.shields.io/badge/crystal-%3E%3D1.14.0-blue.svg)](https://crystal-lang.org)
 
-A Crystal implementation of the Python keyring library, providing secure password/secret storage across different platforms.
+A Crystal port of https://github.com/jaraco/keyring (Python keyring v25.7.0), providing secure password/secret storage across different platforms.
+
+**Upstream source**: `vendor/python-keyring` (git submodule, pinned to [v25.7.0](https://github.com/jaraco/keyring/releases/tag/v25.7.0), commit `38c0401`)
 
 ## Features
 
@@ -240,6 +242,20 @@ When a new version tag (vX.Y.Z) is pushed:
 - Test all: `make test` or `crystal spec`
 - Format code: `make format` or `crystal tool format`
 - Lint code: `make lint` or `ameba --fail-level Error`
+
+## Upstream README Highlights
+
+Key concepts from the [upstream Python keyring](https://github.com/jaraco/keyring) (v25.7.0):
+
+- **Recommended backends**: macOS Keychain, Freedesktop Secret Service (GNOME/KDE), Windows Credential Locker
+- **Third-party backends**: Extensible via the `keyrings` namespace (BitWarden, 1Password, Google Sheets, pass, etc.)
+- **API**: `get_password`, `set_password`, `delete_password`, `get_credential` with `(service, username)` signatures
+- **Configuration**: `keyringrc.cfg` file with `default-keyring` and `keyring-path` options
+- **Runtime config**: `set_keyring()` for programmatic backend selection
+- **Environments**: `PYTHON_KEYRING_BACKEND` to force a specific backend; `--disable` to use Null backend
+- **Errors**: `KeyringError`, `InitError`, `PasswordSetError`, `PasswordDeleteError`
+
+See `vendor/python-keyring/README.rst` for the full upstream documentation.
 
 ## Contributing
 

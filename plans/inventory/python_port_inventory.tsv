@@ -1,0 +1,35 @@
+# source_id	kind	status	crystal_refs	notes
+keyring.backend.KeyringBackend	class	ported	src/keyring/backend.cr	Abstract base class for all backends
+keyring.core.get_password	function	ported	src/keyring/keyring.cr	Main API: get_password
+keyring.core.set_password	function	ported	src/keyring/keyring.cr	Main API: set_password
+keyring.core.delete_password	function	ported	src/keyring/keyring.cr	Main API: delete_password
+keyring.core.get_credential	function	ported	src/keyring/keyring.cr	Main API: get_credential
+keyring.core.set_keyring	function	missing	-	Programmatic backend selection (config file only currently)
+keyring.core.get_keyring	function	missing	-	Return current backend instance
+keyring.core.list_credentials	function	ported	src/keyring/keyring.cr	Crystal extension: list all credentials
+keyring.credentials.Credential	class	ported	src/keyring/credential.cr	Credential data structure
+keyring.errors.KeyringError	class	ported	src/keyring/errors.cr	Base error class
+keyring.errors.InitError	class	ported	src/keyring/errors.cr	Init error
+keyring.errors.PasswordSetError	class	ported	src/keyring/errors.cr	Set error
+keyring.errors.PasswordDeleteError	class	ported	src/keyring/errors.cr	Delete error
+keyring.backends.macOS.Keyring	class	ported	src/keyring/macos_backend.cr	macOS Keychain backend
+keyring.backends.Windows.Keyring	class	ported	src/keyring/windows_backend.cr	Windows Credential Manager backend
+keyring.backends.SecretService.Keyring	class	ported	src/keyring/linux_backend.cr	Linux Secret Service backend
+keyring.backends.libsecret.Keyring	class	ported	src/keyring/linux_backend.cr	Linux libsecret backend
+keyring.backends.null.Keyring	class	missing	-	Null/degenerate backend
+keyring.backends.chainer.ChainerBackend	class	missing	-	Chained backend
+keyring.backends.fail.Keyring	class	missing	-	Fail backend (always raises)
+keyring.backends.kwallet.Keyring	class	missing	-	KDE KWallet backend
+keyring.cli.main	function	ported	src/keyring/cli.cr	CLI entry point (get, set, delete, list)
+keyring.completion	module	missing	-	Shell completion
+keyring.devpi_client	module	missing	-	DevPI client integration
+keyring.http	module	missing	-	HTTP backend integration
+keyring.testing.backend	module	missing	-	Backend testing utilities
+keyring.testing.util	module	missing	-	Test utilities
+keyring.util.platform_	module	missing	-	Platform detection utilities
+keyring.compat.properties	module	missing	-	Python 2/3 compat (not needed in Crystal)
+keyring.compat.py312	module	missing	-	Python 3.12 compat (not needed in Crystal)
+Crystal.FileBackend	class	ported	src/keyring/file_backend.cr	Crystal-specific: encrypted file storage
+Crystal.Encryption	module	ported	src/keyring/encryption.cr	Crystal-specific: Sodium SecretBox/Argon2
+Crystal.Config	module	ported	src/keyring/config.cr	Crystal-specific: configuration management
+Crystal.Logging	module	ported	src/keyring/logging.cr	Crystal-specific: diagnostic logging

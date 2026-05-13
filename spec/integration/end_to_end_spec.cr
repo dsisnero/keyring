@@ -289,7 +289,6 @@ describe "End-to-End Integration" do
   end
   # Fake backends for testing fallback logic
 
-
   it "Backend selection: falls back to available backend" do
     # Override backend candidates with one unavailable and one available
     Keyring::Keyring.override_backend_candidates([IntegrationTestFakes::FakeUnavailableBackend, IntegrationTestFakes::FakeAvailableBackend])

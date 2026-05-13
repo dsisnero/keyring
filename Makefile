@@ -74,6 +74,9 @@ container-info:
 install:
 	shards install
 
+update:
+	shards update
+
 build:
 	shards build
 

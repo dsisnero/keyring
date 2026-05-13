@@ -20,7 +20,7 @@ begin
   puts "✓ Found #{credentials.size} total credentials in keychain"
 
   # Filter to our test credentials
-  test_creds = credentials.select { |c| c.service.starts_with?(test_prefix) }
+  test_creds = credentials.select(&.service.starts_with?(test_prefix))
   puts "✓ Found #{test_creds.size} test credentials"
 
   if test_creds.size == 3
@@ -51,7 +51,7 @@ puts "✓ Cleaned up test credentials"
 
 puts "\n5. Verifying cleanup..."
 credentials = keyring.list_credentials
-remaining = credentials.select { |c| c.service.starts_with?(test_prefix) }
+remaining = credentials.select(&.service.starts_with?(test_prefix))
 if remaining.empty?
   puts "✓ All test credentials removed"
 else

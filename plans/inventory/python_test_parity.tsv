@@ -1,0 +1,19 @@
+# source_test_id	status	crystal_refs	notes
+tests.test_backend	missing	-	Backend contract tests
+tests.backends.test_macOS	ported	spec/keyring/macos_backend_spec.cr	macOS backend tests
+tests.backends.test_Windows	ported	spec/keyring/windows_backend_spec.cr	Windows backend tests
+tests.backends.test_SecretService	ported	spec/keyring/linux_backend_spec.cr	Linux backend tests
+tests.backends.test_libsecret	partial	spec/keyring/linux_backend_spec.cr	Shared with SecretService tests
+tests.backends.test_kwallet	missing	-	KWallet backend tests (not ported)
+tests.backends.test_chainer	missing	-	Chainer backend tests (not ported)
+tests.test_cli	partial	spec/keyring/cli_spec.cr	CLI tests
+tests.test_core	ported	spec/keyring/keyring_spec.cr	Core API tests
+tests.test_errors	ported	spec/keyring/errors_spec.cr	Error class tests
+tests.test_integration	partial	spec/integration/	Integration tests
+tests.test_packaging	missing	-	Packaging tests (not applicable)
+tests.test_multiprocess	missing	-	Multiprocess tests (not applicable)
+tests.util.test_platform	missing	-	Platform utility tests
+Crystal.file_backend_spec	ported	spec/keyring/file_backend_spec.cr	Crystal-specific file backend tests
+Crystal.encryption_spec	ported	spec/keyring/encryption_spec.cr	Crystal-specific encryption tests
+Crystal.credential_spec	ported	spec/keyring/credential_spec.cr	Crystal-specific credential tests
+Crystal.config_spec	ported	spec/keyring/config_spec.cr	Crystal-specific config tests
