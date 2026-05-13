@@ -1,38 +1,27 @@
 # Dockerfile for testing Linux backend with GNOME Keyring (ARM64 compatible)
-FROM debian:bookworm-slim
+FROM crystallang/crystal:latest
 
 # Avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies
+# Install Linux-specific system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     git \
-    build-essential \
-    libssl-dev \
-    libxml2-dev \
-    libyaml-dev \
-    libgmp-dev \
-    libevent-dev \
-    libpcre3-dev \
-    pkg-config \
+    wget \
     # Secret Service / libsecret
     libsecret-1-0 \
     libsecret-1-dev \
+    libglib2.0-dev \
+    # Sodium for encryption
+    libsodium-dev \
     # GNOME Keyring for Secret Service
     gnome-keyring \
     # D-Bus for Secret Service communication
     dbus \
     dbus-x11 \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Crystal via official repository
-RUN apt-get update && apt-get install -y gnupg \
-    && curl -fsSL https://archive.keyring.crystal-lang.org/gpg | gpg --dearmor -o /usr/share/keyrings/crystal-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/crystal-keyring.gpg] https://archive.keyring.crystal-lang.org/debian/ bookworm main" > /etc/apt/sources.list.d/crystal.list \
-    && apt-get update \
-    && apt-get install -y crystal
 
 # Verify Crystal installation
 RUN crystal --version

@@ -124,20 +124,20 @@ endif
 
 docker-test:
 ifdef CONTAINER
-	$(RUN_CMD) with-keyring crystal spec
+	$(RUN_CMD) with-keyring sh -c "shards install && crystal spec"
 else ifdef DOCKER_COMPOSE
 	$(RUN_CMD) test
 else
-	$(RUN_CMD) with-keyring crystal spec
+	$(RUN_CMD) with-keyring sh -c "shards install && crystal spec"
 endif
 
 docker-test-linux:
 ifdef CONTAINER
-	$(RUN_CMD) with-keyring crystal spec spec/keyring/linux_backend_spec.cr
+	$(RUN_CMD) with-keyring sh -c "shards install && crystal spec spec/keyring/linux_backend_spec.cr && crystal spec spec/keyring/kwallet_backend_spec.cr"
 else ifdef DOCKER_COMPOSE
 	$(RUN_CMD) test-linux
 else
-	$(RUN_CMD) with-keyring crystal spec spec/keyring/linux_backend_spec.cr
+	$(RUN_CMD) with-keyring sh -c "shards install && crystal spec spec/keyring/linux_backend_spec.cr && crystal spec spec/keyring/kwallet_backend_spec.cr"
 endif
 
 docker-dev:

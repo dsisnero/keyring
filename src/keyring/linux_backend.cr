@@ -4,6 +4,7 @@ require "./errors"
 {% if flag?(:linux) %}
   @[Link("secret-1")]
   @[Link("glib-2.0")]
+  @[Link("gobject-2.0")]
   lib LibSecret
     alias GError = Void*
     alias GList = Void*
@@ -274,7 +275,7 @@ module Keyring
               end
             end
           ensure
-            LibSecret.g_list_free_full(items, ->LibSecret.g_object_unref(Void*))
+            LibSecret.g_list_free_full(items, ->LibSecret.g_object_unref(Void*).pointer)
           end
         ensure
           LibSecret.g_object_unref(service.as(Void*))
@@ -372,7 +373,7 @@ module Keyring
               end
             end
           ensure
-            LibSecret.g_list_free_full(items, ->LibSecret.g_object_unref(Void*))
+            LibSecret.g_list_free_full(items, ->LibSecret.g_object_unref(Void*).pointer)
           end
         ensure
           LibSecret.g_object_unref(secret_service.as(Void*))
