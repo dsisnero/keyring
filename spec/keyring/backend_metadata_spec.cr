@@ -39,6 +39,22 @@ module Keyring
       cred.metadata["owner"].should eq("teamA")
     end
 
-    pending "MockBackend metadata persistence (no storage)"
+    it "sets and retrieves metadata with MockBackend (in-memory)" do
+      # Override candidates so MockBackend is selected
+      Keyring.override_backend_candidates([MockBackend.as(Backend.class)])
+      keyring = Keyring.new
+      service = "meta-mock-#{Random.rand(10_000)}"
+      user = "mock-user"
+
+      keyring.set_password(service, user, "pw")
+      keyring.set_metadata(service, user, "env", "test")
+      keyring.set_metadata(service, user, "version", "1.0")
+
+      cred = keyring.get_credential(service, user)
+      cred.should_not be_nil
+      cred = cred.as(Credential)
+      cred.metadata["env"].should eq("test")
+      cred.metadata["version"].should eq("1.0")
+    end
   end
 end

@@ -22,7 +22,11 @@ module Keyring
 
     def set_password(service : String, username : String, password : String)
       key = make_key(service, username)
-      @storage[key] = Credential.new(service, username, password)
+      if existing = @storage[key]?
+        existing.password = password
+      else
+        @storage[key] = Credential.new(service, username, password)
+      end
     end
 
     def delete_password(service : String, username : String)

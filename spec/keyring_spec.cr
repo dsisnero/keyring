@@ -55,9 +55,38 @@ describe Keyring do
     end
 
     describe "#update_password" do
-      pending "updates existing password"
-      pending "raises error if credential doesn't exist"
-      pending "validates parameters"
+      it "updates existing password" do
+        keyring = Keyring::Keyring.new
+        service = "upd-svc-#{Random.rand(10_000)}"
+        user = "upd-user"
+        keyring.set_password(service, user, "old-pass")
+        keyring.get_password(service, user).should eq("old-pass")
+
+        keyring.update_password(service, user, "new-pass")
+        keyring.get_password(service, user).should eq("new-pass")
+
+        keyring.delete_password(service, user)
+      end
+
+      it "raises error if credential doesn't exist" do
+        keyring = Keyring::Keyring.new
+        expect_raises(Keyring::KeyringError, /not found/) do
+          keyring.update_password("no-svc", "no-user", "pass")
+        end
+      end
+
+      it "validates parameters" do
+        keyring = Keyring::Keyring.new
+        expect_raises(Keyring::KeyringError, /empty/) do
+          keyring.update_password("", "user", "pass")
+        end
+        expect_raises(Keyring::KeyringError, /empty/) do
+          keyring.update_password("svc", "", "pass")
+        end
+        expect_raises(Keyring::KeyringError, /empty/) do
+          keyring.update_password("svc", "user", "")
+        end
+      end
     end
   end
 end
