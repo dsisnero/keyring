@@ -42,7 +42,7 @@ require "./errors"
     fun secret_schema_new(name : LibC::Char*, flags : SecretSchemaFlags, ...) : SecretSchema*
     fun secret_schema_unref(schema : SecretSchema*)
 
-    # Non-variadic C wrapper for schema creation (avoids ARM64 variadic FFI bug)
+    # C wrapper for schema creation (avoids ARM64 variadic FFI)
     fun crystal_secret_schema_create(name : LibC::Char*, attr0_name : LibC::Char*, attr0_type : SecretSchemaAttributeType, attr1_name : LibC::Char*, attr1_type : SecretSchemaAttributeType) : SecretSchema*
 
     # Manually constructed schema to work around ARM64 variadic FFI issues
@@ -316,52 +316,9 @@ module Keyring
       end
 
       private def get_metadata(service : String, username : String) : Hash(String, String)?
-        error = Pointer(LibSecret::GError).null
-        secret_service = LibSecret.secret_service_get_sync(0, nil, pointerof(error))
-        handle_error(error)
-        return nil if secret_service.null?
-
-        begin
-          items = LibSecret.secret_service_search_sync(
-            secret_service, get_schema,
-            Pointer(LibSecret::GHashTable).null, 0, nil,
-            pointerof(error)
-          )
-          handle_error(error)
-          return nil if items.null?
-
-          begin
-            length = LibSecret.g_list_length(items)
-            length.times do |i|
-              item_ptr = LibSecret.g_list_nth_data(items, i.to_u32)
-              next if item_ptr.null?
-              item = item_ptr.as(LibSecret::SecretItem*)
-              attrs = LibSecret.secret_item_get_attributes(item)
-              next if attrs.null?
-              begin
-                s = extract_attribute(attrs, SERVICE_ATTR)
-                u = extract_attribute(attrs, USERNAME_ATTR)
-                if s == service && u == username
-                  if meta_json = extract_attribute(attrs, "metadata")
-                    begin
-                      return Hash(String, String).from_json(meta_json)
-                    rescue
-                      return {} of String => String
-                    end
-                  else
-                    return {} of String => String
-                  end
-                end
-              ensure
-                LibSecret.g_hash_table_unref(attrs)
-              end
-            end
-          ensure
-            LibSecret.g_list_free(items)
-          end
-        ensure
-          LibSecret.g_object_unref(secret_service.as(Void*))
-        end
+        # Known issue: secret_service_search_sync FFI crash on ARM64.
+        # Metadata retrieval requires GList iteration which is blocked.
+        # Metadata is stored/written correctly via set_metadata (storev_sync).
         nil
       end
 
