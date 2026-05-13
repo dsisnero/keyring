@@ -1,4 +1,5 @@
 require "./keyring/backend"
+require "./keyring/chainer_backend"
 require "./keyring/config"
 require "./keyring/credential"
 require "./keyring/encryption"

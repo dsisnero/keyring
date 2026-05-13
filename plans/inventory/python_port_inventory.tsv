@@ -17,7 +17,7 @@ keyring.backends.Windows.Keyring	class	ported	src/keyring/windows_backend.cr	Win
 keyring.backends.SecretService.Keyring	class	ported	src/keyring/linux_backend.cr	Linux Secret Service backend
 keyring.backends.libsecret.Keyring	class	ported	src/keyring/linux_backend.cr	Linux libsecret backend
 keyring.backends.null.Keyring	class	ported	src/keyring/null_backend.cr	Null/degenerate backend
-keyring.backends.chainer.ChainerBackend	class	missing	-	Chained backend
+keyring.backends.chainer.ChainerBackend	class	ported	src/keyring/chainer_backend.cr	Chained backend, iterates multiple backends in sequence
 keyring.backends.fail.Keyring	class	ported	src/keyring/fail_backend.cr	Fail backend (always raises)
 keyring.backends.kwallet.Keyring	class	missing	-	KDE KWallet backend
 keyring.cli.main	function	ported	src/keyring/cli.cr	CLI entry point (get, set, delete, list)
