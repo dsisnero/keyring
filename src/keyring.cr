@@ -8,6 +8,7 @@ require "./keyring/fail_backend"
 require "./keyring/file_backend"
 require "./keyring/logging"
 require "./keyring/null_backend"
+require "./keyring/platform"
 require "./keyring/keyring"
 
 {% if flag?(:linux) %}

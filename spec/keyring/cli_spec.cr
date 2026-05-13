@@ -8,7 +8,7 @@ module Keyring
       ENV["KEYRING_BACKEND"] = "FileBackend"
       tmp = "/tmp/keyring-cli-#{Random.rand(1_000_000)}"
       Dir.mkdir_p(tmp)
-      Dir.mkdir_p(File.join(tmp, "keyring"))
+      Dir.mkdir_p(File.join(tmp, "python_keyring"))
       ENV["XDG_DATA_HOME"] = tmp
     end
 
@@ -109,14 +109,14 @@ module Keyring
       service = "cli-export-#{Random.rand(10_000)}"
       CLI.run(["set", "-s", service, "-u", "u1", "-p", "p1"])
       CLI.run(["set", "-s", service, "-u", "u2", "-p", "p2"])
-      export_file = File.join(ENV["XDG_DATA_HOME"], "keyring", "creds.json")
+      export_file = File.join(ENV["XDG_DATA_HOME"], "python_keyring", "creds.json")
       CLI.run(["export", "-f", export_file])
       stdout_io.to_s.includes?("exported successfully").should be_true
 
       # Reset store by pointing to a new directory
       new_store = File.join(ENV["XDG_DATA_HOME"], "new")
       Dir.mkdir_p(new_store)
-      Dir.mkdir_p(File.join(new_store, "keyring"))
+      Dir.mkdir_p(File.join(new_store, "python_keyring"))
       ENV["XDG_DATA_HOME"] = new_store
 
       # Import

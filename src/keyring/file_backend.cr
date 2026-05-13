@@ -2,6 +2,7 @@ require "./backend"
 require "./credential"
 require "./encryption"
 require "./errors"
+require "./platform"
 require "json"
 require "file_utils"
 
@@ -22,17 +23,7 @@ module Keyring
     end
 
     def self.default_storage_path : String
-      # Use XDG_DATA_HOME if set, otherwise use platform-specific default
-      base_dir = ENV["XDG_DATA_HOME"]? || default_data_dir
-      File.join(base_dir, "keyring", DEFAULT_FILENAME)
-    end
-
-    private def self.default_data_dir : String
-      {% if flag?(:windows) %}
-        ENV["LOCALAPPDATA"]? || File.join(ENV["USERPROFILE"]? || "", "AppData", "Local")
-      {% else %}
-        File.join(ENV["HOME"]? || "", ".local", "share")
-      {% end %}
+      File.join(Platform.data_root, DEFAULT_FILENAME)
     end
 
     def initialize(storage_path : String? = nil, encryption_key : String? = nil)

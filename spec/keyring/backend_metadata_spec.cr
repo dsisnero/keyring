@@ -15,7 +15,7 @@ module Keyring
     it "persists metadata with FileBackend via Keyring API" do
       dir = "/tmp/keyring-meta-#{Random.rand(1_000_000)}"
       Dir.mkdir_p(dir)
-      Dir.mkdir_p(File.join(dir, "keyring"))
+      Dir.mkdir_p(File.join(dir, "python_keyring"))
       # Force FileBackend via environment and ensure it uses our temp directory
       ENV["KEYRING_BACKEND"] = "FileBackend"
       ENV["XDG_DATA_HOME"] = dir

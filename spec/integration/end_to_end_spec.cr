@@ -95,7 +95,7 @@ describe "End-to-End Integration" do
       ENV["KEYRING_BACKEND"] = "FileBackend"
       ENV["XDG_DATA_HOME"] = dir
       # Ensure the keyring subdirectory exists before initialization
-      Dir.mkdir_p(File.join(dir, "keyring"))
+      Dir.mkdir_p(File.join(dir, "python_keyring"))
       keyring = Keyring::Keyring.new
 
       service = "test-service"
@@ -119,7 +119,7 @@ describe "End-to-End Integration" do
     with_temp_dir("keyring-integration") do |dir|
       ENV["KEYRING_BACKEND"] = "FileBackend"
       ENV["XDG_DATA_HOME"] = dir
-      Dir.mkdir_p(File.join(dir, "keyring"))
+      Dir.mkdir_p(File.join(dir, "python_keyring"))
       keyring = Keyring::Keyring.new
 
       # Store multiple credentials
@@ -151,7 +151,7 @@ describe "End-to-End Integration" do
     with_temp_dir("keyring-integration") do |dir|
       ENV["KEYRING_BACKEND"] = "FileBackend"
       ENV["XDG_DATA_HOME"] = dir
-      Dir.mkdir_p(File.join(dir, "keyring"))
+      Dir.mkdir_p(File.join(dir, "python_keyring"))
       keyring = Keyring::Keyring.new
 
       # Create credentials with different service names
@@ -186,7 +186,7 @@ describe "End-to-End Integration" do
     with_temp_dir("keyring-integration") do |dir|
       ENV["KEYRING_BACKEND"] = "FileBackend"
       ENV["XDG_DATA_HOME"] = dir
-      Dir.mkdir_p(File.join(dir, "keyring"))
+      Dir.mkdir_p(File.join(dir, "python_keyring"))
       keyring = Keyring::Keyring.new
 
       # Create some credentials with metadata
@@ -204,7 +204,7 @@ describe "End-to-End Integration" do
         # to simulate importing into a fresh keyring
         with_temp_dir("keyring-import") do |import_dir|
           ENV["XDG_DATA_HOME"] = import_dir
-          Dir.mkdir_p(File.join(import_dir, "keyring"))
+          Dir.mkdir_p(File.join(import_dir, "python_keyring"))
           keyring2 = Keyring::Keyring.new
 
           # Import credentials
@@ -239,7 +239,7 @@ describe "End-to-End Integration" do
 
       # Set XDG_DATA_HOME to isolate storage
       ENV["XDG_DATA_HOME"] = dir
-      Dir.mkdir_p(File.join(dir, "keyring"))
+      Dir.mkdir_p(File.join(dir, "python_keyring"))
 
       # Initialize keyring with config file
       keyring = Keyring::Keyring.new(config_path)
@@ -273,7 +273,7 @@ describe "End-to-End Integration" do
 
       # Set XDG_DATA_HOME to isolate storage
       ENV["XDG_DATA_HOME"] = dir
-      Dir.mkdir_p(File.join(dir, "keyring"))
+      Dir.mkdir_p(File.join(dir, "python_keyring"))
 
       # Initialize keyring with config file
       keyring = Keyring::Keyring.new(config_path)

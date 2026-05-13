@@ -1,6 +1,7 @@
 require "yaml"
 require "file_utils"
 require "base64"
+require "./platform"
 
 module Keyring
   class Config
@@ -15,16 +16,7 @@ module Keyring
     property log_file : String?
 
     def self.default_config_path : String
-      base_dir = ENV["XDG_CONFIG_HOME"]? || default_config_dir
-      File.join(base_dir, "keyring", "config.yml")
-    end
-
-    def self.default_config_dir : String
-      {% if flag?(:windows) %}
-        File.join(ENV["APPDATA"]? || "", "keyring", "config.yml")
-      {% else %}
-        File.join(ENV["HOME"]? || "", ".config", "keyring", "config.yml")
-      {% end %}
+      File.join(Platform.config_root, "config.yml")
     end
 
     def initialize

@@ -69,6 +69,25 @@ module TestHelpers
       FileUtils.rm_rf(path) if Dir.exists?(path)
     end
   end
+
+  # Set environment variable for duration of block, restore after
+  def with_env(key : String, value : String?, &)
+    old = ENV[key]?
+    begin
+      if value
+        ENV[key] = value
+      else
+        ENV.delete(key)
+      end
+      yield
+    ensure
+      if old
+        ENV[key] = old
+      else
+        ENV.delete(key)
+      end
+    end
+  end
 end
 
 # Make helpers available in specs

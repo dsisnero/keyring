@@ -26,7 +26,7 @@ keyring.devpi_client	module	missing	-	DevPI client integration
 keyring.http	module	missing	-	HTTP backend integration
 keyring.testing.backend	module	missing	-	Backend testing utilities
 keyring.testing.util	module	missing	-	Test utilities
-keyring.util.platform_	module	missing	-	Platform detection utilities
+keyring.util.platform_	module	ported	src/keyring/platform.cr	Platform detection: data_root, config_root per XDG spec
 keyring.compat.properties	module	missing	-	Python 2/3 compat (not needed in Crystal)
 keyring.compat.py312	module	missing	-	Python 3.12 compat (not needed in Crystal)
 Crystal.FileBackend	class	ported	src/keyring/file_backend.cr	Crystal-specific: encrypted file storage
