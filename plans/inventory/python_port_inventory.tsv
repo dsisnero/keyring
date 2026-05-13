@@ -19,16 +19,16 @@ keyring.backends.libsecret.Keyring	class	ported	src/keyring/linux_backend.cr	Lin
 keyring.backends.null.Keyring	class	ported	src/keyring/null_backend.cr	Null/degenerate backend
 keyring.backends.chainer.ChainerBackend	class	ported	src/keyring/chainer_backend.cr	Chained backend, iterates multiple backends in sequence
 keyring.backends.fail.Keyring	class	ported	src/keyring/fail_backend.cr	Fail backend (always raises)
-keyring.backends.kwallet.Keyring	class	missing	-	KDE KWallet backend
-keyring.cli.main	function	ported	src/keyring/cli.cr	CLI entry point (get, set, delete, list)
-keyring.completion	module	missing	-	Shell completion (CLI enhanced with --output json, config, generate-key)
-keyring.devpi_client	module	missing	-	DevPI client integration
-keyring.http	module	missing	-	HTTP backend integration
+keyring.backends.kwallet.Keyring	class	intentional_divergence	-	KDE KWallet not needed: Crystal Linux backend uses SecretService which covers KDE
+keyring.cli.main	function	ported	src/keyring/cli.cr	CLI entry point (get, set, delete, list, search, export, import, config, generate-key)
+keyring.completion	module	skipped	-	Crystal CLI uses OptionParser; tab completion TBD if demand arises
+keyring.devpi_client	module	skipped	-	DevPI-specific client; not applicable to Crystal ecosystem
+keyring.http	module	skipped	-	HTTP backend integration; can be added as a separate shard if needed
 keyring.testing.backend	module	ported	spec/keyring/backend_contract_spec.cr	BackendBasicTests: 13 contract tests per backend
 keyring.testing.util	module	ported	spec/support/test_helpers.cr	random_string utility, with_env helper
 keyring.util.platform_	module	ported	src/keyring/platform.cr	Platform detection: data_root, config_root per XDG spec
-keyring.compat.properties	module	missing	-	Python 2/3 compat (not needed in Crystal)
-keyring.compat.py312	module	missing	-	Python 3.12 compat (not needed in Crystal)
+keyring.compat.properties	module	intentional_divergence	-	Python 2/3 compat; Crystal has no equivalent concept
+keyring.compat.py312	module	intentional_divergence	-	Python 3.12 compat; Crystal has no equivalent concept
 Crystal.FileBackend	class	ported	src/keyring/file_backend.cr	Crystal-specific: encrypted file storage
 Crystal.Encryption	module	ported	src/keyring/encryption.cr	Crystal-specific: Sodium SecretBox/Argon2
 Crystal.Config	module	ported	src/keyring/config.cr	Crystal-specific: configuration management
