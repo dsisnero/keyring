@@ -3,6 +3,7 @@ require "./config"
 require "./credential"
 require "./encryption"
 require "./errors"
+require "./fail_backend"
 require "./file_backend"
 require "./logging"
 
@@ -209,7 +210,8 @@ module Keyring
         end
       end
 
-      raise NoBackendError.new("No suitable keyring backend found")
+      Log.warn { "No healthy backend found, using FailBackend as fallback" }
+      FailBackend.new
     end
 
     # Reorder candidates to honor configured priority. Unknown names are ignored.
