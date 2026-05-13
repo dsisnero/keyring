@@ -68,7 +68,12 @@ module Keyring
       validate_params(service, username)
       Log.debug { "Getting password for #{service}:#{username}" }
       return unless cred = get_credential(service, username)
-      @config.encrypt_passwords? ? cred.decrypt_password : cred.password
+      return unless password = cred.password
+      if @config.encrypt_passwords? && (key = @config.encryption_key)
+        Encryption.decrypt(password, key)
+      else
+        password
+      end
     end
 
     def set_password(service : String, username : String, password : String)
@@ -278,7 +283,7 @@ module Keyring
           end
         end
       end
-      raise last_error.as(KeyringError)
+      raise last_error || raise("Unexpected: no error but retry exhausted")
     end
 
     private def backend_healthy?(backend : Backend) : Bool
