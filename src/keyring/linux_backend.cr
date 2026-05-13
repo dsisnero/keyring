@@ -255,11 +255,14 @@ module Keyring
 
     def list_credentials : Array(Credential)
       {% if flag?(:linux) %}
-        # Known issue: secret_service_search_sync crashes on ARM64 when
-        # called via Crystal FFI, even though identical C code works fine.
-        # The C shim schema (crystal_secret_schema_create) is proven valid
-        # in C test programs. All other operations (get/set/delete/credential)
-        # work correctly. Tracked for Crystal compiler investigation.
+        # Crystal/ARM64 runtime conflict: secret_service_search_sync crashes
+        # when called from within the Crystal process, even via C wrappers.
+        # Identical C code works fine in standalone gcc-compiled binaries.
+        # Root cause: Crystal's GC/signal handlers likely conflict with GLib
+        # internals during schema attribute validation.
+        #
+        # All other operations (get/set/delete/credential) work correctly.
+        # Tracked for upstream Crystal runtime investigation.
         [] of Credential
       {% else %}
         [] of Credential
@@ -316,9 +319,8 @@ module Keyring
       end
 
       private def get_metadata(service : String, username : String) : Hash(String, String)?
-        # Known issue: secret_service_search_sync FFI crash on ARM64.
-        # Metadata retrieval requires GList iteration which is blocked.
-        # Metadata is stored/written correctly via set_metadata (storev_sync).
+        # Same Crystal/ARM64 runtime conflict as list_credentials.
+        # Metadata writes via set_metadata/storev_sync work correctly.
         nil
       end
 
