@@ -142,12 +142,20 @@ endif
 
 docker-dev:
 ifdef CONTAINER
-	$(RUN_INTERACTIVE_CMD) bash
+	$(RUN_INTERACTIVE_CMD) bash -c "shards install --skip-postinstall >/dev/null 2>&1; exec bash"
 else ifdef DOCKER_COMPOSE
 	$(RUN_CMD) dev
 else
-	$(RUN_INTERACTIVE_CMD) bash
+	$(RUN_INTERACTIVE_CMD) bash -c "shards install --skip-postinstall >/dev/null 2>&1; exec bash"
 endif
+
+# Run a command in an already-running container (faster than docker-test-linux)
+# Usage: make docker-exec CMD="crystal spec spec/keyring/linux_backend_spec.cr"
+docker-exec:
+	@echo "Starting persistent dev container — keep this running in another terminal with:"
+	@echo "  make docker-dev"
+	@echo ""
+	$(RUN_CMD) with-keyring bash -c "shards install --skip-postinstall >/dev/null 2>&1 && $(CMD)"
 
 docker-clean:
 	@echo "Cleaning with $(CONTAINER_ENGINE)..."
@@ -158,5 +166,6 @@ ifdef CONTAINER
 endif
 
 # Convenience aliases
-test-linux: docker-build docker-test-linux
+test-linux: docker-build
+	$(RUN_CMD) with-keyring sh -c "cd /workspace && gcc -c -fPIC src/keyring/schema_shim.c -o src/keyring/schema_shim.o \$$(pkg-config --cflags libsecret-1) 2>&1 && shards check || shards install --skip-postinstall && crystal spec spec/keyring/linux_backend_spec.cr && crystal spec spec/keyring/kwallet_backend_spec.cr"
 dev-linux: docker-build docker-dev

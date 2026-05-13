@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
     wget \
+    gcc \
     # Secret Service / libsecret
     libsecret-1-0 \
     libsecret-1-dev \

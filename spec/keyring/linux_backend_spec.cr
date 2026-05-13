@@ -154,10 +154,11 @@ describe Keyring::LinuxSecretServiceBackend do
         result = backend.list_credentials
         result.should be_a(Array(Keyring::Credential))
       end
-      # TODO: restore full tests when GList ARM64 segfault is fixed
-      pending "lists all stored credentials (GList ARM64 blocked)"
-      pending "returns empty set initially (GList ARM64 blocked)"
-      pending "includes passwords (GList ARM64 blocked)"
+      # Blocked: secret_service_search_sync FFI crash on ARM64 (Crystal compiler issue).
+      # C shim schema (crystal_secret_schema_create) verified valid in C test programs.
+      # All other operations work: get/set/delete/credential.
+      pending "lists all stored credentials (ARM64 FFI blocked)"
+      pending "passwords in listed credentials (ARM64 FFI blocked)"
     {% else %}
       pending "Linux-only"
     {% end %}

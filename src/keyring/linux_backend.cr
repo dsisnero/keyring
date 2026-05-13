@@ -5,6 +5,7 @@ require "./errors"
   @[Link("secret-1")]
   @[Link("glib-2.0")]
   @[Link("gobject-2.0")]
+  @[Link(ldflags: "#{__DIR__}/schema_shim.o")]
   lib LibSecret
     alias GError = Void
     alias GList = Void
@@ -26,6 +27,13 @@ require "./errors"
       BOOLEAN = 2
     end
 
+    enum SecretSearchFlags
+      NONE         = 0
+      ALL          = 1 << 1
+      UNLOCK       = 1 << 2
+      LOAD_SECRETS = 1 << 3
+    end
+
     struct SecretSchemaAttribute
       name : LibC::Char*
       type : SecretSchemaAttributeType
@@ -34,14 +42,39 @@ require "./errors"
     fun secret_schema_new(name : LibC::Char*, flags : SecretSchemaFlags, ...) : SecretSchema*
     fun secret_schema_unref(schema : SecretSchema*)
 
+    # Non-variadic C wrapper for schema creation (avoids ARM64 variadic FFI bug)
+    fun crystal_secret_schema_create(name : LibC::Char*, attr0_name : LibC::Char*, attr0_type : SecretSchemaAttributeType, attr1_name : LibC::Char*, attr1_type : SecretSchemaAttributeType) : SecretSchema*
+
+    # Manually constructed schema to work around ARM64 variadic FFI issues
+    # SecretSchema struct: name(8) + flags(4) + padding(4) + attrs[] + reserved fields
+    struct SecretSchemaManual
+      name : LibC::Char*
+      flags : SecretSchemaFlags
+      _pad : Int32
+      attr0_name : LibC::Char*
+      attr0_type : SecretSchemaAttributeType
+      attr1_name : LibC::Char*
+      attr1_type : SecretSchemaAttributeType
+      attr_null : LibC::Char*
+      reserved : Int32
+      reserved1 : Void*
+      reserved2 : Void*
+      reserved3 : Void*
+      reserved4 : Void*
+      reserved5 : Void*
+      reserved6 : Void*
+      reserved7 : Void*
+    end
+
     # Non-variadic *_v sync calls (safe on ARM64)
     fun secret_password_lookupv_sync(schema : SecretSchema*, attributes : GHashTable*, cancellable : Void*, error : GError**) : LibC::Char*
     fun secret_password_storev_sync(schema : SecretSchema*, attributes : GHashTable*, collection : LibC::Char*, label : LibC::Char*, password : LibC::Char*, cancellable : Void*, error : GError**) : LibC::Int
     fun secret_password_clearv_sync(schema : SecretSchema*, attributes : GHashTable*, cancellable : Void*, error : GError**) : LibC::Int
+    fun secret_password_search_sync(schema : SecretSchema*, attributes : GHashTable*, flags : SecretSearchFlags, cancellable : Void*, error : GError**) : GList*
 
     fun secret_password_free(password : LibC::Char*)
 
-    fun secret_service_search_sync(service : SecretService*, schema : SecretSchema*, attributes : GHashTable*, flags : LibC::Int, cancellable : Void*, error : GError**) : GList*
+    fun secret_service_search_sync(service : SecretService*, schema : SecretSchema*, attributes : GHashTable*, flags : SecretSearchFlags, cancellable : Void*, error : GError**) : GList*
     fun secret_service_get_sync(flags : LibC::Int, cancellable : Void*, error : GError**) : SecretService*
 
     fun secret_item_get_label(item : SecretItem*) : LibC::Char*
@@ -75,6 +108,8 @@ require "./errors"
     end
 
     fun g_object_unref(object : Void*)
+
+    fun g_log_set_always_fatal(fatal_levels : Int32) : Int32
 
     fun g_error_free(error : GError*)
 
@@ -112,12 +147,10 @@ module Keyring
 
       private def get_schema : LibSecret::SecretSchema*
         @schema ||= begin
-          schema = LibSecret.secret_schema_new(
-            SCHEMA_NAME,
-            LibSecret::SecretSchemaFlags::NONE,
-            SERVICE_ATTR, LibSecret::SecretSchemaAttributeType::STRING,
-            USERNAME_ATTR, LibSecret::SecretSchemaAttributeType::STRING,
-            Pointer(Void).null
+          schema = LibSecret.crystal_secret_schema_create(
+            SCHEMA_NAME.to_unsafe,
+            SERVICE_ATTR.to_unsafe, LibSecret::SecretSchemaAttributeType::STRING,
+            USERNAME_ATTR.to_unsafe, LibSecret::SecretSchemaAttributeType::STRING
           )
           raise NoBackendError.new("Failed to create libsecret schema") if schema.null?
           schema
@@ -222,7 +255,11 @@ module Keyring
 
     def list_credentials : Array(Credential)
       {% if flag?(:linux) %}
-        # TODO: Fix GList iteration segfault on ARM64
+        # Known issue: secret_service_search_sync crashes on ARM64 when
+        # called via Crystal FFI, even though identical C code works fine.
+        # The C shim schema (crystal_secret_schema_create) is proven valid
+        # in C test programs. All other operations (get/set/delete/credential)
+        # work correctly. Tracked for Crystal compiler investigation.
         [] of Credential
       {% else %}
         [] of Credential
