@@ -10,8 +10,8 @@ keyring.core.get_password	ported	src/keyring/keyring.cr	Module-level function
 keyring.core.set_password	ported	src/keyring/keyring.cr	Module-level function
 keyring.core.delete_password	ported	src/keyring/keyring.cr	Module-level function
 keyring.core.get_credential	ported	src/keyring/keyring.cr	Module-level function
-keyring.core.set_keyring	missing	-	Programmatic backend selection
-keyring.core.get_keyring	missing	-	Get current backend instance
+keyring.core.set_keyring	ported	src/keyring/keyring.cr	self.keyring=(backend) - Crystal setter idiom
+keyring.core.get_keyring	ported	src/keyring/keyring.cr	self.keyring - Crystal getter idiom
 keyring.core.load_config	missing	-	Load keyringrc.cfg
 keyring.core.load_env	missing	-	Load PYTHON_KEYRING_BACKEND env
 keyring.credentials.Credential	ported	src/keyring/credential.cr	Credential object
@@ -24,9 +24,9 @@ keyring.backends.macOS.Keyring	ported	src/keyring/macos_backend.cr	macOS Keychai
 keyring.backends.Windows.Keyring	ported	src/keyring/windows_backend.cr	Windows implementation
 keyring.backends.SecretService.Keyring	ported	src/keyring/linux_backend.cr	Linux implementation
 keyring.backends.libsecret.Keyring	ported	src/keyring/linux_backend.cr	Linux libsecret variant
-keyring.backends.null.Keyring	missing	-	Null backend
+keyring.backends.null.Keyring	ported	src/keyring/null_backend.cr	Null backend
 keyring.backends.chainer.ChainerBackend	missing	-	Chained backend
-keyring.backends.fail.Keyring	missing	-	Fail backend
+keyring.backends.fail.Keyring	ported	src/keyring/fail_backend.cr	Fail backend
 keyring.backends.kwallet.Keyring	missing	-	KWallet backend
 keyring.cli.main	ported	src/keyring/cli.cr	CLI entry
 keyring.cli.get_password	ported	src/keyring/cli.cr	CLI get command

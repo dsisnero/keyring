@@ -4,8 +4,8 @@ keyring.core.get_password	function	ported	src/keyring/keyring.cr	Main API: get_p
 keyring.core.set_password	function	ported	src/keyring/keyring.cr	Main API: set_password
 keyring.core.delete_password	function	ported	src/keyring/keyring.cr	Main API: delete_password
 keyring.core.get_credential	function	ported	src/keyring/keyring.cr	Main API: get_credential
-keyring.core.set_keyring	function	missing	-	Programmatic backend selection (config file only currently)
-keyring.core.get_keyring	function	missing	-	Return current backend instance
+keyring.core.set_keyring	function	ported	src/keyring/keyring.cr	Module-level API: self.keyring=(backend) and backend: constructor param
+keyring.core.get_keyring	function	ported	src/keyring/keyring.cr	Module-level API: self.keyring getter
 keyring.core.list_credentials	function	ported	src/keyring/keyring.cr	Crystal extension: list all credentials
 keyring.credentials.Credential	class	ported	src/keyring/credential.cr	Credential data structure
 keyring.errors.KeyringError	class	ported	src/keyring/errors.cr	Base error class
@@ -16,9 +16,9 @@ keyring.backends.macOS.Keyring	class	ported	src/keyring/macos_backend.cr	macOS K
 keyring.backends.Windows.Keyring	class	ported	src/keyring/windows_backend.cr	Windows Credential Manager backend
 keyring.backends.SecretService.Keyring	class	ported	src/keyring/linux_backend.cr	Linux Secret Service backend
 keyring.backends.libsecret.Keyring	class	ported	src/keyring/linux_backend.cr	Linux libsecret backend
-keyring.backends.null.Keyring	class	missing	-	Null/degenerate backend
+keyring.backends.null.Keyring	class	ported	src/keyring/null_backend.cr	Null/degenerate backend
 keyring.backends.chainer.ChainerBackend	class	missing	-	Chained backend
-keyring.backends.fail.Keyring	class	missing	-	Fail backend (always raises)
+keyring.backends.fail.Keyring	class	ported	src/keyring/fail_backend.cr	Fail backend (always raises)
 keyring.backends.kwallet.Keyring	class	missing	-	KDE KWallet backend
 keyring.cli.main	function	ported	src/keyring/cli.cr	CLI entry point (get, set, delete, list)
 keyring.completion	module	missing	-	Shell completion

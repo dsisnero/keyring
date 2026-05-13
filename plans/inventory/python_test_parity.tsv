@@ -13,6 +13,7 @@ tests.test_integration	partial	spec/integration/	Integration tests
 tests.test_packaging	missing	-	Packaging tests (not applicable)
 tests.test_multiprocess	missing	-	Multiprocess tests (not applicable)
 tests.util.test_platform	missing	-	Platform utility tests
+Crystal.null_fail_backend_spec	ported	spec/keyring/null_fail_backend_spec.cr	NullBackend and FailBackend specs
 Crystal.file_backend_spec	ported	spec/keyring/file_backend_spec.cr	Crystal-specific file backend tests
 Crystal.encryption_spec	ported	spec/keyring/encryption_spec.cr	Crystal-specific encryption tests
 Crystal.credential_spec	ported	spec/keyring/credential_spec.cr	Crystal-specific credential tests
