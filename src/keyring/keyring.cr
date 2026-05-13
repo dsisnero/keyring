@@ -26,6 +26,9 @@ module Keyring
     getter backend : Backend
     getter config : Config
 
+    # Class-level instance for module-level API (keyring=/keyring)
+    @@current_keyring : Keyring? = nil
+
     # Cache for backend availability checks across instances
     @@availability_cache = Hash(String, Bool).new
     # Test hook: override backend candidates list
@@ -41,10 +44,23 @@ module Keyring
       @@availability_cache.clear
     end
 
-    def initialize(config_path : String? = nil)
+    # Set the current keyring backend for module-level API.
+    # Mirrors Python keyring.set_keyring().
+    def self.keyring=(backend : Backend)
+      @@current_keyring = Keyring.new(backend: backend)
+    end
+
+    # Get the current keyring instance for module-level API.
+    # Mirrors Python keyring.get_keyring().
+    # Lazily initializes with auto-detected backend if not set.
+    def self.keyring : Keyring
+      @@current_keyring ||= Keyring.new
+    end
+
+    def initialize(config_path : String? = nil, *, backend : Backend? = nil)
       @config = config_path ? Config.load(config_path) : Config.load
       ::Keyring.setup_logging(@config)
-      @backend = get_preferred_backend
+      @backend = backend || get_preferred_backend
       Log.info { "Initialized keyring with backend: #{@backend.class}" }
     end
 
