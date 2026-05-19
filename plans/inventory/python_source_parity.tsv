@@ -4,7 +4,7 @@ keyring.backend.KeyringBackend.get_password	ported	src/keyring/backend.cr	Abstra
 keyring.backend.KeyringBackend.set_password	ported	src/keyring/backend.cr	Abstract method
 keyring.backend.KeyringBackend.delete_password	ported	src/keyring/backend.cr	Abstract method
 keyring.backend.KeyringBackend.get_credential	ported	src/keyring/backend.cr	Optional method
-keyring.backend.KeyringBackend.set_properties_from_env	missing	-	Environment variable config
+keyring.backend.KeyringBackend.set_properties_from_env	skipped	-	Crystal Config + KEYRING_BACKEND env var equivalent
 keyring.backend.KeyringBackend.priority	mapped	src/keyring/backend.cr	Property for backend priority
 keyring.core.get_password	ported	src/keyring/keyring.cr	Module-level function
 keyring.core.set_password	ported	src/keyring/keyring.cr	Module-level function
@@ -12,10 +12,10 @@ keyring.core.delete_password	ported	src/keyring/keyring.cr	Module-level function
 keyring.core.get_credential	ported	src/keyring/keyring.cr	Module-level function
 keyring.core.set_keyring	ported	src/keyring/keyring.cr	self.keyring=(backend) - Crystal setter idiom
 keyring.core.get_keyring	ported	src/keyring/keyring.cr	self.keyring - Crystal getter idiom
-keyring.core.load_config	missing	-	Load keyringrc.cfg
-keyring.core.load_env	missing	-	Load PYTHON_KEYRING_BACKEND env
+keyring.core.load_config	mapped	src/keyring/config.cr	Config.load (YAML) replaces keyringrc.cfg
+keyring.core.load_env	mapped	src/keyring/config.cr	Config.apply_env_overrides replaces PYTHON_KEYRING_BACKEND
 keyring.credentials.Credential	ported	src/keyring/credential.cr	Credential object
-keyring.credentials.SimpleCredential	missing	-	Simple credential variant
+keyring.credentials.SimpleCredential	skipped	-	Crystal Credential struct covers both SimpleCredential and Credential use cases
 keyring.errors.KeyringError	ported	src/keyring/errors.cr	Base exception
 keyring.errors.InitError	ported	src/keyring/errors.cr	Init exception
 keyring.errors.PasswordSetError	ported	src/keyring/errors.cr	Set exception
@@ -25,17 +25,17 @@ keyring.backends.Windows.Keyring	ported	src/keyring/windows_backend.cr	Windows i
 keyring.backends.SecretService.Keyring	ported	src/keyring/linux_backend.cr	Linux implementation
 keyring.backends.libsecret.Keyring	ported	src/keyring/linux_backend.cr	Linux libsecret variant
 keyring.backends.null.Keyring	ported	src/keyring/null_backend.cr	Null backend
-keyring.backends.chainer.ChainerBackend	missing	-	Chained backend
+keyring.backends.chainer.ChainerBackend	ported	src/keyring/chainer_backend.cr	Chained backend
 keyring.backends.fail.Keyring	ported	src/keyring/fail_backend.cr	Fail backend
-keyring.backends.kwallet.Keyring	missing	-	KWallet backend
+keyring.backends.kwallet.Keyring	ported	src/keyring/kwallet_backend.cr	KWallet backend via qdbus
 keyring.cli.main	ported	src/keyring/cli.cr	CLI entry
 keyring.cli.get_password	ported	src/keyring/cli.cr	CLI get command
 keyring.cli.set_password	ported	src/keyring/cli.cr	CLI set command
 keyring.cli.delete_password	ported	src/keyring/cli.cr	CLI delete command
 keyring.cli.list_credentials	ported	src/keyring/cli.cr	CLI list command
-keyring.completion	missing	-	Shell completion module
-keyring.devpi_client	missing	-	DevPI client
-keyring.http	missing	-	HTTP backend
-keyring.testing.backend.BackendBasicTests	missing	-	Backend test suite
-keyring.testing.util	missing	-	Test utilities
-keyring.util.platform_	missing	-	Platform detection
+keyring.completion	ported	src/keyring/cli.cr	Shell completion (bash+zsh) in completion subcommand
+keyring.devpi_client	skipped	-	Python-specific, not applicable to Crystal port
+keyring.http	skipped	-	Python-specific, not applicable to Crystal port
+keyring.testing.backend.BackendBasicTests	mapped	spec/keyring/backend_contract_spec.cr	Backend contract tests
+keyring.testing.util	mapped	spec/support/test_helpers.cr	Test utilities
+keyring.util.platform_	ported	src/keyring/platform.cr	Platform detection (XDG paths)

@@ -1,18 +1,18 @@
 # source_test_id	status	crystal_refs	notes
-tests.test_backend	missing	-	Backend contract tests
+tests.test_backend	mapped	spec/keyring/backend_contract_spec.cr	Backend contract tests
 tests.backends.test_macOS	ported	spec/keyring/macos_backend_spec.cr	macOS backend tests
 tests.backends.test_Windows	ported	spec/keyring/windows_backend_spec.cr	Windows backend tests
 tests.backends.test_SecretService	ported	spec/keyring/linux_backend_spec.cr	Linux backend tests
 tests.backends.test_libsecret	partial	spec/keyring/linux_backend_spec.cr	Shared with SecretService tests
-tests.backends.test_kwallet	missing	-	KWallet backend tests (not ported)
-tests.backends.test_chainer	missing	-	Chainer backend tests (not ported)
+tests.backends.test_kwallet	ported	spec/keyring/kwallet_backend_spec.cr	KWallet backend tests
+tests.backends.test_chainer	ported	spec/keyring/chainer_backend_spec.cr	Chainer backend tests
 tests.test_cli	partial	spec/keyring/cli_spec.cr	CLI tests
 tests.test_core	ported	spec/keyring/keyring_spec.cr	Core API tests
 tests.test_errors	ported	spec/keyring/errors_spec.cr	Error class tests
 tests.test_integration	partial	spec/integration/	Integration tests
-tests.test_packaging	missing	-	Packaging tests (not applicable)
-tests.test_multiprocess	missing	-	Multiprocess tests (not applicable)
-tests.util.test_platform	missing	-	Platform utility tests
+tests.test_packaging	skipped	-	Python packaging tests, not applicable
+tests.test_multiprocess	skipped	-	Python multiprocess tests, not applicable
+tests.util.test_platform	ported	spec/keyring/platform_spec.cr	Platform utility tests
 Crystal.null_fail_backend_spec	ported	spec/keyring/null_fail_backend_spec.cr	NullBackend and FailBackend specs
 Crystal.chainer_backend_spec	ported	spec/keyring/chainer_backend_spec.cr	ChainerBackend specs
 Crystal.file_backend_spec	ported	spec/keyring/file_backend_spec.cr	Crystal-specific file backend tests

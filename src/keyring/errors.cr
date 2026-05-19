@@ -3,6 +3,8 @@ module Keyring
 
   class NoBackendError < Error; end
 
+  class InitError < Error; end
+
   class PasswordSetError < Error; end
 
   class PasswordDeleteError < Error; end

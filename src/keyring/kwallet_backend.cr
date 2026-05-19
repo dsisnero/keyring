@@ -100,7 +100,7 @@ module Keyring
       wallet = network_wallet
       @handle = open(wallet)
       if @handle < 0
-        raise BackendError.new("Failed to open KWallet")
+        raise InitError.new("Failed to open KWallet")
       end
       migrate(service) if service
       @connected = true
