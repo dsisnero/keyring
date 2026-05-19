@@ -28,11 +28,11 @@ module Keyring
 
     def initialize(storage_path : String? = nil, encryption_key : String? = nil)
       @storage_path = storage_path || FileBackend.default_storage_path
-      @encryption_key = encryption_key || auto_generate_key(@storage_path)
       @credentials = {} of String => Credential
       @file_lock = nil
 
       ensure_storage_directory
+      @encryption_key = encryption_key || auto_generate_key(@storage_path)
       load_credentials
     end
 

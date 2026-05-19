@@ -187,21 +187,7 @@ module Keyring
 
     # Find an alternative backend to fail over to
     private def find_fallback_backend(current : Backend) : Backend?
-      candidates = @@candidates_override || begin
-        list = [] of Backend.class
-        {% if flag?(:windows) %}
-          list << WindowsBackend
-        {% end %}
-        {% if flag?(:darwin) %}
-          list << MacOsKeyChainBackend
-        {% end %}
-        {% if flag?(:linux) %}
-          list << LinuxSecretServiceBackend
-          list << KWalletBackend
-        {% end %}
-        list << FileBackend
-        list
-      end
+      candidates = @@candidates_override || get_candidate_list
 
       current_name = current.class.name
       candidates.each do |klass|
@@ -291,23 +277,46 @@ module Keyring
       end
     end
 
+    # List all available backend names for this platform
+    def list_available_backends : Array(String)
+      candidates = @@candidates_override || get_candidate_list
+      candidates.select { |klass| available_cached?(klass) }.map(&.name)
+    end
+
+    # Switch to a named backend at runtime
+    def switch_to_backend(name : String) : Backend
+      candidates = @@candidates_override || get_candidate_list
+      match = candidates.find { |klass| klass.name.ends_with?(name) || klass.name == name }
+      raise KeyringError.new("Backend not found: #{name}") unless match
+      raise KeyringError.new("Backend not available: #{name}") unless available_cached?(match)
+
+      new_backend = initialize_backend_with_retry(match)
+      raise KeyringError.new("Backend health check failed: #{name}") unless backend_healthy?(new_backend)
+
+      switch_backend(new_backend)
+      new_backend
+    end
+
+    # Get platform-appropriate candidate list (used internally)
+    private def get_candidate_list : Array(Backend.class)
+      list = [] of Backend.class
+      {% if flag?(:windows) %}
+        list << WindowsBackend
+      {% end %}
+      {% if flag?(:darwin) %}
+        list << MacOsKeyChainBackend
+      {% end %}
+      {% if flag?(:linux) %}
+        list << LinuxSecretServiceBackend
+        list << KWalletBackend
+      {% end %}
+      list << FileBackend
+      list
+    end
+
     private def get_preferred_backend : Backend
       # 1) Construct candidate list for this platform (or test override)
-      candidates = @@candidates_override || begin
-        list = [] of Backend.class
-        {% if flag?(:windows) %}
-          list << WindowsBackend
-        {% end %}
-        {% if flag?(:darwin) %}
-          list << MacOsKeyChainBackend
-        {% end %}
-        {% if flag?(:linux) %}
-          list << LinuxSecretServiceBackend
-          list << KWalletBackend
-        {% end %}
-        list << FileBackend
-        list
-      end
+      candidates = @@candidates_override || get_candidate_list
 
       # 2) Respect explicit preference if available
       if preferred = @config.preferred_backend

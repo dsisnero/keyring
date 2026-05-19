@@ -64,37 +64,52 @@ module Keyring
       service = nil
       username = nil
       password = nil
+      password_stdin = false
       config_path = nil
       query = nil
       export_path = nil
       import_path = nil
       output_format = "plain"
+      verbose = false
+      quiet = false
+      confirm = false
+      config_key = nil
+      config_value = nil
 
       parser = OptionParser.new do |opts|
-        opts.banner = "Usage: keyring [command] [options]"
+        opts.banner = "Usage: keyring_cr [command] [options]"
 
         opts.on("get", "Get a password") { command = "get" }
         opts.on("set", "Set a password") { command = "set" }
+        opts.on("update", "Update a password") { command = "update" }
         opts.on("delete", "Delete a password") { command = "delete" }
         opts.on("list", "List all credentials") { command = "list" }
         opts.on("search", "Search credentials") { command = "search" }
         opts.on("export", "Export credentials") { command = "export" }
         opts.on("import", "Import credentials") { command = "import" }
         opts.on("config", "Manage configuration") { command = "config" }
+        opts.on("backend", "Manage backends") { command = "backend" }
         opts.on("generate-key", "Generate an encryption key") { command = "generate-key" }
+        opts.on("completion", "Generate shell completion script") { command = "completion" }
 
         opts.on("-s NAME", "--service=NAME", "Service name") { |service_name| service = service_name }
         opts.on("-u USER", "--username=USER", "Username") { |user| username = user }
         opts.on("-p PASS", "--password=PASS", "Password") { |pass| password = pass }
+        opts.on("--password-stdin", "Read password from stdin") { password_stdin = true }
         opts.on("-c PATH", "--config=PATH", "Config file path") { |config| config_path = config }
         opts.on("-q QUERY", "--query=QUERY", "Search query") { |search_query| query = search_query }
         opts.on("-f FILE", "--file=FILE", "Import/export file path") { |file_path| export_path = import_path = file_path }
         opts.on("--output=FORMAT", "Output format: plain or json") { |format| output_format = format }
+        opts.on("--verbose", "Enable verbose logging") { verbose = true }
+        opts.on("--quiet", "Suppress non-error output") { quiet = true }
+        opts.on("--confirm", "Require confirmation for destructive operations") { confirm = true }
+        opts.on("-k KEY", "--key=KEY", "Config key") { |key| config_key = key }
+        opts.on("--value=VALUE", "Config value (for config set)") { |val| config_value = val }
         opts.on("-h", "--help", "Show this help") do
           out_puts opts
           terminate(0)
         end
-        opts.on("-v", "--version", "Show version") do
+        opts.on("--version", "Show version") do
           out_puts "Keyring version #{VERSION}"
           terminate(0)
         end
@@ -113,6 +128,14 @@ module Keyring
           out_puts parser
           terminate(0)
         end
+
+        # Set log level for verbose/quiet via config
+        if verbose
+          ENV["KEYRING_LOG_LEVEL"] = "DEBUG"
+        elsif quiet
+          ENV["KEYRING_LOG_LEVEL"] = "ERROR"
+        end
+
         keyring = Keyring.new(config_path)
 
         case command
@@ -120,33 +143,41 @@ module Keyring
           check_required_args(service: service, username: username)
           s = service.as(String)
           u = username.as(String)
-          if password = keyring.get_password(s, u)
+          if found_password = keyring.get_password(s, u)
             if output_format == "json"
-              out_puts({"service" => s, "username" => u, "password" => password}.to_json)
+              out_puts({"service" => s, "username" => u, "password" => found_password}.to_json)
             else
-              out_puts password
+              out_puts found_password
             end
           else
-            err_puts "No password found".colorize(:red)
+            err_puts "No password found for #{s}:#{u}".colorize(:red)
             terminate(1)
           end
         when "set"
           check_required_args(service: service, username: username)
           s = service.as(String)
           u = username.as(String)
-          unless password
-            out_print "Enter password: "
-            password = read_password
-            out_puts ""
-          end
+          password = resolve_password(password, password_stdin)
           keyring.set_password(s, u, password.as(String))
-          out_puts "Password stored successfully".colorize(:green)
+          out_puts "Password stored successfully".colorize(:green) unless quiet
+        when "update"
+          check_required_args(service: service, username: username)
+          s = service.as(String)
+          u = username.as(String)
+          password = resolve_password(password, password_stdin)
+          keyring.update_password(s, u, password.as(String))
+          out_puts "Password updated successfully".colorize(:green) unless quiet
         when "delete"
           check_required_args(service: service, username: username)
           s = service.as(String)
           u = username.as(String)
+          if confirm
+            out_print "Are you sure you want to delete #{s}:#{u}? [y/N] "
+            answer = @@password_provider ? "y" : STDIN.gets.try(&.chomp).try(&.downcase)
+            terminate(0) unless answer == "y" || answer == "yes"
+          end
           keyring.delete_password(s, u)
-          out_puts "Password deleted successfully".colorize(:green)
+          out_puts "Password deleted successfully".colorize(:green) unless quiet
         when "list"
           creds = keyring.list_credentials
           if output_format == "json"
@@ -177,34 +208,87 @@ module Keyring
           check_required_args(file: export_path)
           f = export_path.as(String)
           keyring.export_credentials(f)
-          out_puts "Credentials exported successfully".colorize(:green)
+          out_puts "Credentials exported to #{f}".colorize(:green) unless quiet
         when "import"
           check_required_args(file: import_path)
           f = import_path.as(String)
           keyring.import_credentials(f)
-          out_puts "Credentials imported successfully".colorize(:green)
+          out_puts "Credentials imported from #{f}".colorize(:green) unless quiet
         when "config"
           sub_action = args[0]? || "show"
           case sub_action
           when "show"
             cfg = keyring.config
-            out_puts({
-              "preferred_backend" => cfg.preferred_backend,
-              "backend_priority"  => cfg.backend_priority,
-              "default_service"   => cfg.default_service,
-              "encrypt_passwords" => cfg.encrypt_passwords?,
-              "log_level"         => cfg.log_level,
-              "log_file"          => cfg.log_file,
-            }.to_json)
+            if output_format == "json"
+              out_puts({
+                "preferred_backend" => cfg.preferred_backend,
+                "backend_priority"  => cfg.backend_priority,
+                "default_service"   => cfg.default_service,
+                "encrypt_passwords" => cfg.encrypt_passwords?,
+                "log_level"         => cfg.log_level,
+                "log_file"          => cfg.log_file,
+              }.to_json)
+            else
+              out_puts "preferred_backend: #{cfg.preferred_backend || "(auto)"}".colorize(:cyan)
+              out_puts "backend_priority:  #{cfg.backend_priority.try(&.join(", ")) || "(default)"}"
+              out_puts "default_service:   #{cfg.default_service || "(none)"}"
+              out_puts "encrypt_passwords: #{cfg.encrypt_passwords?}"
+              out_puts "log_level:         #{cfg.log_level}"
+              out_puts "log_file:          #{cfg.log_file || "(none)"}"
+            end
+          when "set"
+            k = config_key
+            v = config_value
+            unless k && v
+              err_puts "ERROR: --key and --value are required for config set".colorize(:red)
+              terminate(1)
+            end
+            keyring.config.set_property(k, v)
+            keyring.config.save
+            out_puts "Config #{config_key} set to #{config_value}".colorize(:green) unless quiet
           else
-            err_puts "ERROR: Unknown config sub-command: #{sub_action}"
+            err_puts "ERROR: Unknown config sub-command: #{sub_action}".colorize(:red)
+            err_puts "Available: show, set"
+            terminate(1)
+          end
+        when "backend"
+          sub_action = args[0]? || "list"
+          case sub_action
+          when "list"
+            backends = keyring.list_available_backends
+            current = keyring.backend.class.name
+            if output_format == "json"
+              out_puts backends.map { |name| {"name" => name, "active" => name == current}.to_json }.to_json
+            elsif backends.empty?
+              out_puts "No backends available".colorize(:yellow)
+            else
+              out_puts "Available backends:".colorize(:cyan)
+              backends.each do |name|
+                marker = name == current ? " *" : "  "
+                out_puts "#{marker} #{name}".colorize(name == current ? :green : :white)
+              end
+            end
+          when "switch"
+            target = args[1]?
+            unless target
+              err_puts "ERROR: backend name required".colorize(:red)
+              terminate(1)
+            end
+            new_backend = keyring.switch_to_backend(target)
+            out_puts "Switched to backend: #{new_backend.class.name}".colorize(:green) unless quiet
+          else
+            err_puts "ERROR: Unknown backend sub-command: #{sub_action}".colorize(:red)
+            err_puts "Available: list, switch"
             terminate(1)
           end
         when "generate-key"
           key = Encryption.generate_key
           out_puts key
+        when "completion"
+          shell = args[0]? || "bash"
+          out_puts generate_completion(shell)
         else
-          err_puts "ERROR: No command specified"
+          err_puts "ERROR: No command specified".colorize(:red)
           err_puts parser
           terminate(1)
         end
@@ -218,6 +302,22 @@ module Keyring
       end
     end
 
+    private def self.resolve_password(password, password_stdin) : String?
+      return password if password
+
+      if password_stdin
+        if provider = @@password_provider
+          return provider.call
+        end
+        return STDIN.gets.try(&.chomp)
+      end
+
+      out_print "Enter password: "
+      pw = read_password
+      out_puts ""
+      pw
+    end
+
     private def self.check_required_args(**args)
       args.each do |name, value|
         if value.nil?
@@ -226,7 +326,70 @@ module Keyring
         end
       end
     end
+
+    private def self.generate_completion(shell : String) : String
+      case shell
+      when "bash"
+        <<-BASH
+_keyring_cr_completion() {
+  local cur prev words cword
+  _init_completion || return
+  COMMANDS="get set update delete list search export import config backend generate-key"
+
+  case $prev in
+    -s|--service) COMPREPLY=() ; return ;;
+    -u|--username) COMPREPLY=() ; return ;;
+    -f|--file) _filedir ; return ;;
+    -c|--config) _filedir ; return ;;
+    --output) COMPREPLY=( $(compgen -W "plain json" -- "$cur") ) ; return ;;
+    config)
+      COMPREPLY=( $(compgen -W "show set" -- "$cur") )
+      return ;;
+    backend)
+      COMPREPLY=( $(compgen -W "list switch" -- "$cur") )
+      return ;;
+    completion)
+      COMPREPLY=( $(compgen -W "bash zsh" -- "$cur") )
+      return ;;
+  esac
+
+  if [[ $cur == -* ]]; then
+    COMPREPLY=( $(compgen -W "--service --username --password --password-stdin --config --query --file --output --verbose --quiet --help --version --confirm --key --value" -- "$cur") )
+  else
+    COMPREPLY=( $(compgen -W "$COMMANDS" -- "$cur") )
+  fi
+}
+complete -F _keyring_cr_completion keyring_cr
+BASH
+      when "zsh"
+        <<-ZSH
+#compdef keyring_cr
+
+_keyring_cr() {
+  local -a commands
+  commands=(
+    'get:Get a password'
+    'set:Set a password'
+    'update:Update a password'
+    'delete:Delete a password'
+    'list:List all credentials'
+    'search:Search credentials'
+    'export:Export credentials'
+    'import:Import credentials'
+    'config:Manage configuration'
+    'backend:Manage backends'
+    'generate-key:Generate an encryption key'
+    'completion:Generate shell completion script'
+  )
+  _describe -t commands 'keyring_cr commands' commands
+}
+_keyring_cr
+ZSH
+      else
+        "# Unsupported shell: #{shell}"
+      end
+    end
   end
 end
 
-Keyring::CLI.run if PROGRAM_NAME == "keyring"
+Keyring::CLI.run if PROGRAM_NAME == "keyring_cr"

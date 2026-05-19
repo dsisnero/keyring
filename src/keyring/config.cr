@@ -73,6 +73,27 @@ module Keyring
       @encrypt_passwords = encrypt.downcase == "true"
     end
 
+    def set_property(key : String, value : String)
+      case key.downcase
+      when "preferred_backend"
+        @preferred_backend = value
+      when "backend_priority"
+        @backend_priority = value.split(',').map(&.strip).reject(&.empty?)
+      when "default_service"
+        @default_service = value
+      when "encrypt_passwords"
+        @encrypt_passwords = value.downcase.in?("true", "1", "yes")
+      when "encryption_key"
+        @encryption_key = value
+      when "log_level"
+        @log_level = value
+      when "log_file"
+        @log_file = value
+      else
+        raise ConfigError.new("Unknown config key: #{key}")
+      end
+    end
+
     def save(path : String = Config.default_config_path)
       FileUtils.mkdir_p(File.dirname(path))
       File.write(path, to_yaml)

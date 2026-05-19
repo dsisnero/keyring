@@ -95,7 +95,7 @@ describe "End-to-End Integration" do
       ENV["KEYRING_BACKEND"] = "FileBackend"
       ENV["XDG_DATA_HOME"] = dir
       # Ensure the keyring subdirectory exists before initialization
-      Dir.mkdir_p(File.join(dir, "python_keyring"))
+      Dir.mkdir_p(File.join(dir, "keyring_cr"))
       keyring = Keyring::Keyring.new
 
       service = "test-service"
@@ -119,7 +119,7 @@ describe "End-to-End Integration" do
     with_temp_dir("keyring-integration") do |dir|
       ENV["KEYRING_BACKEND"] = "FileBackend"
       ENV["XDG_DATA_HOME"] = dir
-      Dir.mkdir_p(File.join(dir, "python_keyring"))
+      Dir.mkdir_p(File.join(dir, "keyring_cr"))
       keyring = Keyring::Keyring.new
 
       # Store multiple credentials
@@ -151,7 +151,7 @@ describe "End-to-End Integration" do
     with_temp_dir("keyring-integration") do |dir|
       ENV["KEYRING_BACKEND"] = "FileBackend"
       ENV["XDG_DATA_HOME"] = dir
-      Dir.mkdir_p(File.join(dir, "python_keyring"))
+      Dir.mkdir_p(File.join(dir, "keyring_cr"))
       keyring = Keyring::Keyring.new
 
       # Create credentials with different service names
@@ -186,7 +186,7 @@ describe "End-to-End Integration" do
     with_temp_dir("keyring-integration") do |dir|
       ENV["KEYRING_BACKEND"] = "FileBackend"
       ENV["XDG_DATA_HOME"] = dir
-      Dir.mkdir_p(File.join(dir, "python_keyring"))
+      Dir.mkdir_p(File.join(dir, "keyring_cr"))
       keyring = Keyring::Keyring.new
 
       # Create some credentials with metadata
@@ -204,7 +204,7 @@ describe "End-to-End Integration" do
         # to simulate importing into a fresh keyring
         with_temp_dir("keyring-import") do |import_dir|
           ENV["XDG_DATA_HOME"] = import_dir
-          Dir.mkdir_p(File.join(import_dir, "python_keyring"))
+          Dir.mkdir_p(File.join(import_dir, "keyring_cr"))
           keyring2 = Keyring::Keyring.new
 
           # Import credentials
@@ -239,7 +239,7 @@ describe "End-to-End Integration" do
 
       # Set XDG_DATA_HOME to isolate storage
       ENV["XDG_DATA_HOME"] = dir
-      Dir.mkdir_p(File.join(dir, "python_keyring"))
+      Dir.mkdir_p(File.join(dir, "keyring_cr"))
 
       # Initialize keyring with config file
       keyring = Keyring::Keyring.new(config_path)
@@ -273,7 +273,7 @@ describe "End-to-End Integration" do
 
       # Set XDG_DATA_HOME to isolate storage
       ENV["XDG_DATA_HOME"] = dir
-      Dir.mkdir_p(File.join(dir, "python_keyring"))
+      Dir.mkdir_p(File.join(dir, "keyring_cr"))
 
       # Initialize keyring with config file
       keyring = Keyring::Keyring.new(config_path)
@@ -311,7 +311,7 @@ describe "End-to-End Integration" do
   it "Encryption: encrypts passwords when configured" do
     with_temp_dir("keyring-encrypt") do |dir|
       ENV["XDG_DATA_HOME"] = dir
-      Dir.mkdir_p(File.join(dir, "python_keyring"))
+      Dir.mkdir_p(File.join(dir, "keyring_cr"))
 
       key = Keyring::Encryption.generate_key
       config_path = File.join(dir, "encrypt_config.yml")
@@ -351,10 +351,10 @@ describe "End-to-End Integration" do
   it "Error recovery: handles corrupted data gracefully" do
     with_temp_dir("keyring-corrupt") do |dir|
       ENV["XDG_DATA_HOME"] = dir
-      Dir.mkdir_p(File.join(dir, "python_keyring"))
+      Dir.mkdir_p(File.join(dir, "keyring_cr"))
 
       # Write corrupted data to the storage path
-      storage = File.join(dir, "python_keyring", "credentials.enc.json")
+      storage = File.join(dir, "keyring_cr", "credentials.enc.json")
       Dir.mkdir_p(File.dirname(storage))
       File.write(storage, "not-valid-encrypted-data")
 
@@ -376,7 +376,7 @@ describe "End-to-End Integration" do
     # Try to use a broken backend configuration
     with_temp_dir("keyring-errmsg") do |dir|
       ENV["XDG_DATA_HOME"] = dir
-      Dir.mkdir_p(File.join(dir, "python_keyring"))
+      Dir.mkdir_p(File.join(dir, "keyring_cr"))
 
       # Create a config with invalid encryption key
       config_path = File.join(dir, "bad_config.yml")

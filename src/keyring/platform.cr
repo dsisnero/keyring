@@ -13,7 +13,7 @@ module Keyring
 
     # Returns the platform-specific data root directory.
     # - Windows: %LOCALAPPDATA% or %ProgramData% / Python Keyring
-    # - Linux/macOS: $XDG_DATA_HOME or ~/.local/share / python_keyring
+    # - Linux/macOS: $XDG_DATA_HOME or ~/.local/share / keyring_cr
     def data_root : String
       {% if flag?(:windows) %}
         data_root_windows
@@ -24,7 +24,7 @@ module Keyring
 
     # Returns the platform-specific config root directory.
     # - Windows: same as data_root
-    # - Linux/macOS: $XDG_CONFIG_HOME or ~/.config / python_keyring
+    # - Linux/macOS: $XDG_CONFIG_HOME or ~/.config / keyring_cr
     def config_root : String
       {% if flag?(:windows) %}
         data_root
@@ -33,16 +33,16 @@ module Keyring
       {% end %}
     end
 
-    # Unix-style data root: XDG_DATA_HOME or ~/.local/share/python_keyring
+    # Unix-style data root: XDG_DATA_HOME or ~/.local/share/keyring_cr
     private def data_root_unix : String
       base = ENV["XDG_DATA_HOME"]? || File.join(ENV["HOME"]? || "", ".local", "share")
-      File.join(base, "python_keyring")
+      File.join(base, "keyring_cr")
     end
 
-    # Unix-style config root: XDG_CONFIG_HOME or ~/.config/python_keyring
+    # Unix-style config root: XDG_CONFIG_HOME or ~/.config/keyring_cr
     private def config_root_unix : String
       base = ENV["XDG_CONFIG_HOME"]? || File.join(ENV["HOME"]? || "", ".config")
-      File.join(base, "python_keyring")
+      File.join(base, "keyring_cr")
     end
 
     # Windows data/config root: LOCALAPPDATA or ProgramData / Python Keyring
