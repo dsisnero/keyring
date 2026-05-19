@@ -76,14 +76,11 @@ module Keyring
     end
 
     def get_credential(service : String, username : String) : Credential?
-      return super if username && !username.empty?
-      return nil unless username
-
       ensure_connected!(service)
       entries = entry_list(service)
-      entries.each do |entry_username|
-        password = read_password(service, entry_username)
-        return Credential.new(service: service, username: entry_username, password: password)
+      if entries.includes?(username)
+        password = read_password(service, username)
+        return Credential.new(service: service, username: username, password: password)
       end
       nil
     end
@@ -103,12 +100,12 @@ module Keyring
       wallet = network_wallet
       @handle = open(wallet)
       if @handle < 0
-        raise InitError.new("Failed to open KWallet")
+        raise BackendError.new("Failed to open KWallet")
       end
       migrate(service) if service
       @connected = true
     rescue ex
-      raise InitError.new("Failed to open KWallet: #{ex.message}")
+      raise BackendError.new("Failed to open KWallet: #{ex.message}")
     end
 
     private def network_wallet : String
@@ -192,7 +189,7 @@ module Keyring
       qdbus(@bus_name, @object_path, IFACE, "removeFolder", @handle.to_s, folder, APPID)
     end
 
-    private def self.qdbus(*args : String) : String
+    def self.qdbus(*args : String) : String
       Process.run("qdbus", args: args.to_a, output: :pipe, error: :pipe) do |proc|
         output = proc.output.gets_to_end
         if proc.wait.success?

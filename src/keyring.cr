@@ -7,8 +7,11 @@ require "./keyring/errors"
 require "./keyring/fail_backend"
 require "./keyring/file_backend"
 require "./keyring/logging"
+require "./keyring/metrics"
 require "./keyring/null_backend"
 require "./keyring/platform"
+require "./keyring/retryable"
+require "./keyring/circuit_breaker"
 require "./keyring/keyring"
 
 {% if flag?(:linux) %}

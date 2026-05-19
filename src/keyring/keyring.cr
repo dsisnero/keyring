@@ -6,6 +6,9 @@ require "./errors"
 require "./fail_backend"
 require "./file_backend"
 require "./logging"
+require "./metrics"
+require "./retryable"
+require "./circuit_breaker"
 
 {% if flag?(:linux) %}
   require "./kwallet_backend"
@@ -35,6 +38,14 @@ module Keyring
     # Test hook: override backend candidates list
     @@candidates_override : Array(Backend.class)? = nil
 
+    # Circuit breakers keyed by backend class name
+    @@circuit_breakers = Hash(String, CircuitBreaker).new
+
+    # Retry configuration for backend operations
+    property retry_config : Retryable::RetryConfig
+    # Whether to enable automatic backend failover on persistent failure
+    property? failover_enabled : Bool
+
     # Test helpers (no-ops in production unless called explicitly)
     def self.override_backend_candidates(candidates : Array(Backend.class)?)
       @@candidates_override = candidates
@@ -43,6 +54,22 @@ module Keyring
     def self.reset_backend_overrides
       @@candidates_override = nil
       @@availability_cache.clear
+      @@circuit_breakers.clear
+    end
+
+    # Reset all circuit breakers (test helper)
+    def self.reset_circuit_breakers
+      @@circuit_breakers.clear
+    end
+
+    # Get metrics for all tracked operations
+    def self.metrics(backend : String? = nil, operation : String? = nil) : Hash(String, Metrics::Metric)
+      Metrics.stats(backend, operation)
+    end
+
+    # Print metrics summary to log
+    def self.metrics_summary : String
+      Metrics.summary
     end
 
     # Set the current keyring backend for module-level API.
@@ -61,6 +88,8 @@ module Keyring
     def initialize(config_path : String? = nil, *, backend : Backend? = nil)
       @config = config_path ? Config.load(config_path) : Config.load
       ::Keyring.setup_logging(@config)
+      @retry_config = Retryable.default
+      @failover_enabled = true
       @backend = backend || get_preferred_backend
       Log.info { "Initialized keyring with backend: #{@backend.class}" }
     end
@@ -68,7 +97,8 @@ module Keyring
     def get_password(service : String, username : String) : String?
       validate_params(service, username)
       Log.debug { "Getting password for #{service}:#{username}" }
-      return unless cred = get_credential(service, username)
+      cred = with_operation("get_password") { |backend| backend.get_credential(service, username) }
+      return unless cred
       return unless password = cred.password
       if @config.encrypt_passwords? && (key = @config.encryption_key)
         Encryption.decrypt(password, key)
@@ -87,7 +117,7 @@ module Keyring
         password: password,
         encryption_key: @config.encryption_key
       )
-      @backend.set_password(service, username, cred.password.as(String))
+      with_operation("set_password") { |backend| backend.set_password(service, username, cred.password.as(String)) }
     end
 
     def update_password(service : String, username : String, new_password : String)
@@ -104,7 +134,7 @@ module Keyring
     def delete_password(service : String, username : String)
       validate_params(service, username)
       Log.debug { "Deleting password for #{service}:#{username}" }
-      @backend.delete_password(service, username)
+      with_operation("delete_password") { |backend| backend.delete_password(service, username) }
     end
 
     private def validate_params(service : String, username : String)
@@ -113,11 +143,91 @@ module Keyring
     end
 
     def get_credential(service : String, username : String) : Credential?
-      @backend.get_credential(service, username)
+      with_operation("get_credential") { |backend| backend.get_credential(service, username) }
     end
 
     def list_credentials : Array(Credential)
-      @backend.list_credentials
+      with_operation("list_credentials") { |backend| backend.list_credentials }
+    end
+
+    # Execute a backend operation with retry, circuit breaker, metrics, and failover
+    private def with_operation(operation : String, &block : Backend -> T) : T forall T
+      Metrics.track(@backend.class.name, operation) do
+        execute_on_backend(@backend, operation) { |backend| block.call(backend) }
+      end
+    end
+
+    # Execute on a specific backend with circuit breaker and retry protection
+    private def execute_on_backend(backend : Backend, operation : String, &block : Backend -> T) : T forall T
+      breaker = circuit_breaker_for(backend)
+
+      breaker.execute(operation) do
+        Retryable.with_retry(@retry_config, "#{backend.class.name}.#{operation}") do
+          block.call(backend)
+        end
+      end
+    rescue ex : CircuitOpenError
+      raise ex unless @failover_enabled
+
+      Log.warn { "Circuit breaker open for #{backend.class.name}, attempting failover" }
+      fallback = find_fallback_backend(backend)
+      raise BackendError.new("All backends unavailable for #{operation}: #{ex.message}") unless fallback
+
+      switch_backend(fallback)
+      Retryable.with_retry(@retry_config, "#{fallback.class.name}.#{operation}") do
+        block.call(fallback)
+      end
+    end
+
+    # Find the circuit breaker for a backend (create if needed)
+    private def circuit_breaker_for(backend : Backend) : CircuitBreaker
+      name = backend.class.name
+      @@circuit_breakers[name] ||= CircuitBreaker.new(name)
+    end
+
+    # Find an alternative backend to fail over to
+    private def find_fallback_backend(current : Backend) : Backend?
+      candidates = @@candidates_override || begin
+        list = [] of Backend.class
+        {% if flag?(:windows) %}
+          list << WindowsBackend
+        {% end %}
+        {% if flag?(:darwin) %}
+          list << MacOsKeyChainBackend
+        {% end %}
+        {% if flag?(:linux) %}
+          list << LinuxSecretServiceBackend
+          list << KWalletBackend
+        {% end %}
+        list << FileBackend
+        list
+      end
+
+      current_name = current.class.name
+      candidates.each do |klass|
+        next if klass.name == current_name
+        next unless available_cached?(klass)
+        # Skip if this backend's circuit breaker is also open
+        breaker = @@circuit_breakers[klass.name]?
+        next if breaker && breaker.open?
+
+        begin
+          backend = initialize_backend_with_retry(klass, retries: 1)
+          if backend_healthy?(backend)
+            return backend
+          end
+        rescue
+          next
+        end
+      end
+      nil
+    end
+
+    # Switch to a new backend at runtime
+    def switch_backend(new_backend : Backend)
+      old_name = @backend.class.name
+      @backend = new_backend
+      Log.info { "Switched backend: #{old_name} -> #{new_backend.class.name}" }
     end
 
     def list_services : Array(String)
