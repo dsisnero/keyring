@@ -11,7 +11,7 @@ options = {
   root_dir: Dir.pwd,
   manifest: nil,
   source_path: ENV["PORT_SOURCE_DIR"],
-  language: ENV["PORT_LANGUAGE"] || "go",
+  language: ENV["PORT_LANGUAGE"] || "python",
   parser: ENV["PORT_PARSER"] || "auto"
 }
 

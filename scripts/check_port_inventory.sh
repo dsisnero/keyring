@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="${1:-$(pwd)}"
 MANIFEST="${2:-}"
 SOURCE_PATH="${3:-${PORT_SOURCE_DIR:-}}"
-LANGUAGE="${4:-${PORT_LANGUAGE:-go}}"
+LANGUAGE="${4:-${PORT_LANGUAGE:-python}}"
 PARSER="${PORT_PARSER:-auto}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

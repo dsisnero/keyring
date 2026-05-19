@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="${1:-$(pwd)}"
 OUT="${2:-}"
 SOURCE_PATH="${3:-${PORT_SOURCE_DIR:-}}"
-LANGUAGE="${4:-${PORT_LANGUAGE:-go}}"
+LANGUAGE="${4:-${PORT_LANGUAGE:-python}}"
 FORCE_OVERWRITE="${5:-${PORT_FORCE_OVERWRITE:-0}}"
 PARSER="${PORT_PARSER:-auto}"
 

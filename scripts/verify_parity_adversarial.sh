@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="${1:-$(pwd)}"
 SOURCE_PATH="${2:-${PORT_SOURCE_DIR:-}}"
-LANGUAGE="${3:-${PORT_LANGUAGE:-go}}"
+LANGUAGE="${3:-${PORT_LANGUAGE:-python}}"
 CRYSTAL_SPEC_CMD="${4:-}"
 UPSTREAM_TEST_CMD="${5:-}"
 

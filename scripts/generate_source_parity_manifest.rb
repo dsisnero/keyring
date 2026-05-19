@@ -8,7 +8,7 @@ options = {
   root_dir: Dir.pwd,
   out: nil,
   source_path: ENV["PORT_SOURCE_DIR"],
-  language: ENV["PORT_LANGUAGE"] || "go",
+  language: ENV["PORT_LANGUAGE"] || "python",
   parser: ENV["PORT_PARSER"] || "auto",
   notes_overrides: nil,
   force_overwrite: ENV["PORT_FORCE_OVERWRITE"] == "1"
