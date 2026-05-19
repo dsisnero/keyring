@@ -186,11 +186,10 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        crystal: ["1.14.0", "latest"]
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
-    name: Build on ${{ matrix.os }} with Crystal ${{ matrix.crystal }}
+    name: Release build on ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
@@ -198,7 +197,7 @@ jobs:
     - name: Set up Crystal
       uses: crystal-lang/install-crystal@v1
       with:
-        crystal: ${{ matrix.crystal }}
+        crystal: latest
 
     - name: Install dependencies
       run: shards install
@@ -207,40 +206,13 @@ jobs:
       run: |
         case "${{ matrix.os }}" in
           ubuntu-latest)
-            # Install libsecret for Linux backend compilation
             sudo apt-get update
             sudo apt-get install -y libsecret-1-dev
-            ;;
-          macos-latest)
-            # macOS has Security.framework available by default
-            # No additional setup needed for compilation
-            ;;
-          windows-latest)
-            # Windows has Credential Manager available by default
-            # No additional setup needed for win32cr compilation
             ;;
         esac
 
     - name: Build release binary
       run: shards build --release
-
-    - name: Detect architecture
-      id: detect-arch
-      shell: bash
-      run: |
-        # Detect actual architecture
-        arch=$(uname -m)
-        case "$arch" in
-          x86_64)
-            echo "arch=x64" >> $GITHUB_OUTPUT
-            ;;
-          aarch64|arm64)
-            echo "arch=arm64" >> $GITHUB_OUTPUT
-            ;;
-          *)
-            echo "arch=$arch" >> $GITHUB_OUTPUT
-            ;;
-        esac
 
     - name: Determine binary name
       id: binary-name
@@ -248,17 +220,17 @@ jobs:
       run: |
         case "${{ matrix.os }}" in
           ubuntu-latest|macos-latest)
-            echo "binary_name=keyring" >> $GITHUB_OUTPUT
+            echo "binary_name=keyring_cr" >> $GITHUB_OUTPUT
             ;;
           windows-latest)
-            echo "binary_name=keyring.exe" >> $GITHUB_OUTPUT
+            echo "binary_name=keyring_cr.exe" >> $GITHUB_OUTPUT
             ;;
         esac
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v4
       with:
-        name: keyring-${{ matrix.os }}-${{ steps.detect-arch.outputs.arch }}-${{ matrix.crystal }}
+        name: keyring_cr-${{ matrix.os }}
         path: bin/${{ steps.binary-name.outputs.binary_name }}
         retention-days: 7
 
@@ -286,3 +258,57 @@ jobs:
         generate_release_notes: true
         draft: false
         prerelease: false
+
+  binaries:
+    needs: [test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+      fail-fast: false
+
+    runs-on: ${{ matrix.os }}
+    name: Binary artifact (${{ matrix.os }})
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Crystal
+      uses: crystal-lang/install-crystal@v1
+      with:
+        crystal: latest
+
+    - name: Install dependencies
+      run: shards install
+
+    - name: Platform-specific setup
+      run: |
+        case "${{ matrix.os }}" in
+          ubuntu-latest)
+            sudo apt-get update
+            sudo apt-get install -y libsecret-1-dev
+            ;;
+        esac
+
+    - name: Build binary
+      run: shards build --release
+
+    - name: Determine binary name
+      id: binary-name
+      shell: bash
+      run: |
+        case "${{ matrix.os }}" in
+          ubuntu-latest|macos-latest)
+            echo "binary_name=keyring_cr" >> $GITHUB_OUTPUT
+            ;;
+          windows-latest)
+            echo "binary_name=keyring_cr.exe" >> $GITHUB_OUTPUT
+            ;;
+        esac
+
+    - name: Upload binary artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: keyring_cr-${{ matrix.os }}
+        path: bin/${{ steps.binary-name.outputs.binary_name }}
+        retention-days: 30

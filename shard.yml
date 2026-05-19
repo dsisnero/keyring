@@ -5,7 +5,7 @@ authors:
   - Dominic Sisneros <dsisnero@gmail.com>
 
 targets:
-  keyring:
+  keyring_cr:
     main: src/keyring/cli.cr
 
 dependencies:
