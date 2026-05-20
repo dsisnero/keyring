@@ -12,6 +12,9 @@ module Keyring
     property default_service : String?
     property? encrypt_passwords : Bool
     property encryption_key : String?
+    property encryption_type : String?
+    property encryption_public_key : String?
+    property encryption_secret_key : String?
     property log_level : String
     property log_file : String?
 
@@ -23,8 +26,11 @@ module Keyring
       @preferred_backend = nil
       @backend_priority = nil
       @default_service = nil
-      @encrypt_passwords = false # Default to false to avoid validation error
+      @encrypt_passwords = false
       @encryption_key = nil
+      @encryption_type = nil
+      @encryption_public_key = nil
+      @encryption_secret_key = nil
       @log_level = "INFO"
       @log_file = nil
     end
@@ -87,6 +93,12 @@ module Keyring
         @encryption_key = value
       when "log_level"
         @log_level = value
+      when "encryption_type"
+        @encryption_type = value
+      when "encryption_public_key"
+        @encryption_public_key = value
+      when "encryption_secret_key"
+        @encryption_secret_key = value
       when "log_file"
         @log_file = value
       else

@@ -28,17 +28,18 @@ module Keyring
       return false unless bus
 
       begin
-        output = qdbus(bus, "org.freedesktop.DBus", "/", "org.freedesktop.DBus", "ListActivatableNames")
-        output.includes?(bus)
+        # Check if KWallet service has an owner (actually running on the bus)
+        output = qdbus("org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus.NameHasOwner", bus)
+        output.strip == "true"
       rescue
         false
       end
     end
 
     def self.detect_bus : String?
-      # Check if kwalletd5 is running or activatable
+      # Check if kwalletd5/kwalletd is running or activatable on the session bus
       begin
-        output = qdbus("org.freedesktop.DBus", "/", "org.freedesktop.DBus", "ListNames")
+        output = qdbus("org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus.ListNames")
         return BUS_NAME if output.includes?(BUS_NAME)
         return BUS_NAME_V4 if output.includes?(BUS_NAME_V4)
       rescue
@@ -63,16 +64,12 @@ module Keyring
     end
 
     def set_password(service : String, username : String, password : String)
-      unless connected?
-        raise PasswordSetError.new("Cancelled by user")
-      end
+      connected_or_raise!
       write_password(service, username, password)
     end
 
     def delete_password(service : String, username : String)
-      unless connected?
-        raise PasswordDeleteError.new("Cancelled by user")
-      end
+      connected_or_raise!
       unless has_entry?(service, username)
         raise PasswordDeleteError.new("Password not found: #{service}:#{username}")
       end
@@ -120,6 +117,7 @@ module Keyring
       rescue
         @connected = false
       end
+      @connected
     end
 
     private def ensure_connected!(service : String)
@@ -221,29 +219,49 @@ module Keyring
     end
 
     def self.qdbus(*args : String) : String
-      Process.run("qdbus", args: args.to_a, output: :pipe, error: :pipe) do |proc|
-        output = proc.output.gets_to_end
-        if proc.wait.success?
-          output
-        else
-          err = proc.error.gets_to_end
-          raise KeyringError.new("qdbus error: #{err.strip}") unless err.empty?
-          raise KeyringError.new("qdbus failed with exit code #{proc.wait.exit_code}")
-        end
+      output = IO::Memory.new
+      error = IO::Memory.new
+      status = Process.run("qdbus", args: args.to_a, output: output, error: error)
+      if status.success?
+        output.to_s
+      else
+        err = error.to_s.strip
+        raise KeyringError.new("qdbus error: #{err}") unless err.empty?
+        raise KeyringError.new("qdbus failed with exit code #{status.exit_code}")
       end
     end
 
     private def qdbus(*args : String) : String
-      self.class.qdbus(*args)
+      # qdbus CLI expects interface.method as one argument: org.kde.KWallet.isEnabled
+      # Many call sites pass them separately for readability: qdbus(bus, path, IFACE, "method", ...)
+      # Detect and join: if third positional arg is an interface (contains '.') and fourth is a
+      # simple method name (no '.'), combine them into one argument.
+      call_args = if args.size >= 4 && args[2].includes?('.') && !args[3].includes?('.')
+                    [args[0], args[1], "#{args[2]}.#{args[3]}"] + args[4..].to_a
+                  else
+                    args.to_a
+                  end
+      output = IO::Memory.new
+      error = IO::Memory.new
+      status = Process.run("qdbus", args: call_args, output: output, error: error)
+      if status.success?
+        output.to_s
+      else
+        err = error.to_s.strip
+        raise KeyringError.new("qdbus error: #{err}") unless err.empty?
+        raise KeyringError.new("qdbus failed with exit code #{status.exit_code}")
+      end
     end
   end
 
   class KWallet4Backend < KWalletBackend
+    BUS_NAME_V4 = "org.kde.kwalletd"
+
     def self.available? : Bool
       return false unless system("which qdbus > /dev/null 2>&1")
       begin
-        output = qdbus("org.freedesktop.DBus", "/", "org.freedesktop.DBus", "ListActivatableNames")
-        output.includes?("org.kde.kwalletd")
+        output = qdbus("org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus.NameHasOwner", BUS_NAME_V4)
+        output.strip == "true"
       rescue
         false
       end
