@@ -19,21 +19,33 @@
     end
   {% end %}
 
-  {% if !LibC.has_constant?(:MAP_SHARED) %}
+  {% if !LibC.has_constant?(:MAP_ANON) %}
     lib LibC
-      MAP_SHARED    = 0x01
-      MAP_PRIVATE   = 0x02
-      MAP_FIXED     = 0x10
-      MAP_ANONYMOUS = 0x20
-      MAP_ANON      = MAP_ANONYMOUS
-      MAP_FAILED    = Pointer(Void).null
-      MAP_DONTDUMP  = 0
-      MAP_HUGETLB   = 0
-      MAP_HUGE_1GB  = 0
-      MAP_HUGE_2MB  = 0
-      MS_SYNC       = 4
+      MAP_ANON = 0x20
+    end
+  {% end %}
+
+  {% if !LibC.has_constant?(:MAP_FAILED) %}
+    lib LibC
+      MAP_FAILED = Pointer(Void).null
+    end
+  {% end %}
+
+  {% if !LibC.has_constant?(:MS_SYNC) %}
+    lib LibC
+      MS_SYNC = 4
+    end
+  {% end %}
+
+  {% if !LibC.has_constant?(:MREMAP_MAYMOVE) %}
+    lib LibC
       MREMAP_MAYMOVE = 1
-      SC_PAGESIZE   = 30
+    end
+  {% end %}
+
+  {% if !LibC.has_constant?(:SC_PAGESIZE) %}
+    lib LibC
+      SC_PAGESIZE = 30
     end
   {% end %}
 {% end %}
