@@ -38,11 +38,17 @@ module Keyring
         backend.should be_a(KWalletBackend)
       end
 
-      it "implements abstract Backend methods" do
-        backend = KWalletBackend.new
-        backend.get_password("svc", "user").should be_nil
-        backend.list_credentials.should be_a(Array(Credential))
-      end
+      {% if flag?(:linux) %}
+        if KWalletBackend.available?
+          it "implements abstract Backend methods" do
+            backend = KWalletBackend.new
+            backend.get_password("svc", "user").should be_nil
+            backend.list_credentials.should be_a(Array(Credential))
+          end
+        else
+          pending "implements abstract Backend methods (KWallet D-Bus not available)"
+        end
+      {% end %}
     {% else %}
       pending "KWalletBackend is Linux-only (compile-time)"
     {% end %}
