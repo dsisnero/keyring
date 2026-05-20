@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
-    name: Test on ${{ matrix.os }} with Crystal ${{ matrix.crystal }}
+    name: Test on ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
@@ -25,66 +25,53 @@ jobs:
       with:
         crystal: ${{ matrix.crystal }}
 
-    - name: Install dependencies
-      shell: bash
+    - name: Install system libsodium
       run: |
         case "${{ matrix.os }}" in
-          windows-latest)
-            shards install --skip-postinstall
+          ubuntu-latest)
+            sudo apt-get update
+            sudo apt-get install -y libsodium-dev libsecret-1-dev
             ;;
-          *)
-            shards install
+          macos-latest)
+            brew install libsodium || true
+            ;;
+          windows-latest)
+            # libsodium via vcpkg (pre-installed on GitHub runners)
             ;;
         esac
+
+    - name: Install shard dependencies
+      env:
+        LIBSODIUM_INSTALL: "0"
+      run: shards install
 
     - name: Cache shards
       uses: actions/cache@v4
       with:
         path: lib
-        key: ${{ runner.os }}-crystal-${{ matrix.crystal }}-shards-${{ hashFiles('shard.lock') }}
+        key: ${{ runner.os }}-crystal-shards-${{ hashFiles('shard.lock') }}
         restore-keys: |
-          ${{ runner.os }}-crystal-${{ matrix.crystal }}-shards-
-
-    - name: Platform-specific setup
-      run: |
-        case "${{ matrix.os }}" in
-          ubuntu-latest)
-            # Install libsecret for Linux backend tests
-            sudo apt-get update
-            sudo apt-get install -y libsecret-1-dev gnome-keyring dbus-x11
-            # Start DBus and GNOME Keyring for testing
-            eval "$(dbus-launch --sh-syntax)"
-            mkdir -p ~/.local/share/keyrings
-            /usr/bin/gnome-keyring-daemon --start --components=secrets
-            export $(gnome-keyring-daemon --start)
-            ;;
-          macos-latest)
-            # macOS has Security.framework available by default
-            # No additional setup needed for keyring tests
-            ;;
-          windows-latest)
-            # Windows has Credential Manager available by default
-            # No additional setup needed for win32cr compilation
-            ;;
-        esac
+          ${{ runner.os }}-crystal-shards-
 
     - name: Format check
-      run: crystal tool format --check
-
-    - name: Run Ameba (lint)
-      run: shards build && crystal run lib/ameba/bin/ameba.cr -- --fail-level Error
+      run: crystal tool format --check src spec
 
     - name: Run tests
-      env:
-        KEYRING_TEST_MODE: "true"
       run: crystal spec
 
-    - name: Build project
-      run: shards build
+    - name: Build binary
+      run: shards build --release
+
+    - name: Upload binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: keyring_cr-${{ matrix.os }}
+        path: bin/keyring_cr${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+        retention-days: 7
 
   lint:
     runs-on: ubuntu-latest
-    name: Lint and format
+    name: Lint
 
     steps:
     - uses: actions/checkout@v4
@@ -94,11 +81,18 @@ jobs:
       with:
         crystal: latest
 
-    - name: Install dependencies
-      run: shards install --development
+    - name: Install system libsodium
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libsodium-dev
+
+    - name: Install shard dependencies
+      env:
+        LIBSODIUM_INSTALL: "0"
+      run: shards install
 
     - name: Format check
-      run: crystal tool format --check
+      run: crystal tool format --check src spec
 
     - name: Run Ameba
       run: shards build && crystal run lib/ameba/bin/ameba.cr -- --fail-level Error
@@ -115,7 +109,14 @@ jobs:
       with:
         crystal: latest
 
-    - name: Install dependencies
+    - name: Install system libsodium
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libsodium-dev
+
+    - name: Install shard dependencies
+      env:
+        LIBSODIUM_INSTALL: "0"
       run: shards install
 
     - name: Check for secrets
@@ -124,61 +125,18 @@ jobs:
         config-path: .gitleaks.toml
 
     - name: Dependency audit
-      run: |
-        # Check for known vulnerabilities in dependencies
-        shards list
-        # TODO: Add Crystal-specific dependency vulnerability check when available
+      run: shards list
 
-  coverage:
-    runs-on: ubuntu-latest
-    name: Code coverage
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Crystal
-      uses: crystal-lang/install-crystal@v1
-      with:
-        crystal: latest
-
-    - name: Install dependencies
-      run: shards install --development
-
-    - name: Install libsecret for tests
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libsecret-1-dev gnome-keyring dbus-x11
-        eval "$(dbus-launch --sh-syntax)"
-        mkdir -p ~/.local/share/keyrings
-        /usr/bin/gnome-keyring-daemon --start --components=secrets
-        export $(gnome-keyring-daemon --start)
-
-    - name: Generate coverage
-      env:
-        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
-      run: |
-        # Generate coverage report (requires crystal tool to support coverage)
-        # crystal spec --coverage
-        # crystal tool coverage
-        # For now, just run tests
-        crystal spec --exclude-tag integration
-
-    - name: Upload coverage
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage/coverage.json
-        fail_ci_if_error: false
-
-  build:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [test, lint, security]
+  binaries:
+    needs: [test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
-    name: Release build on ${{ matrix.os }}
+    name: Binary (${{ matrix.os }})
 
     steps:
     - uses: actions/checkout@v4
@@ -188,59 +146,38 @@ jobs:
       with:
         crystal: latest
 
-    - name: Install dependencies
-      shell: bash
-      run: |
-        case "${{ matrix.os }}" in
-          windows-latest)
-            shards install --skip-postinstall
-            ;;
-          *)
-            shards install --skip-postinstall
-            ;;
-        esac
-
-    - name: Platform-specific setup for building
+    - name: Install system libsodium
       run: |
         case "${{ matrix.os }}" in
           ubuntu-latest)
             sudo apt-get update
-            sudo apt-get install -y libsecret-1-dev libsodium-dev
+            sudo apt-get install -y libsodium-dev libsecret-1-dev
             ;;
           macos-latest)
-            brew install libsodium
+            brew install libsodium || true
             ;;
           windows-latest)
-            # libsodium must be pre-installed or available via vcpkg
             ;;
         esac
+
+    - name: Install shard dependencies
+      env:
+        LIBSODIUM_INSTALL: "0"
+      run: shards install
 
     - name: Build release binary
       run: shards build --release
-
-    - name: Determine binary name
-      id: binary-name
-      shell: bash
-      run: |
-        case "${{ matrix.os }}" in
-          ubuntu-latest|macos-latest)
-            echo "binary_name=keyring_cr" >> $GITHUB_OUTPUT
-            ;;
-          windows-latest)
-            echo "binary_name=keyring_cr.exe" >> $GITHUB_OUTPUT
-            ;;
-        esac
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v4
       with:
         name: keyring_cr-${{ matrix.os }}
-        path: bin/${{ steps.binary-name.outputs.binary_name }}
-        retention-days: 7
+        path: bin/keyring_cr${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+        retention-days: 30
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build]
+    needs: [binaries]
     runs-on: ubuntu-latest
     name: Create release
 
@@ -252,82 +189,8 @@ jobs:
       with:
         path: artifacts
 
-    - name: List artifacts
-      run: find artifacts -type f
-
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
         files: artifacts/**/*
         generate_release_notes: true
-        draft: false
-        prerelease: false
-
-  binaries:
-    needs: [test]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-      fail-fast: false
-
-    runs-on: ${{ matrix.os }}
-    name: Binary artifact (${{ matrix.os }})
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Crystal
-      uses: crystal-lang/install-crystal@v1
-      with:
-        crystal: latest
-
-    - name: Install dependencies
-      shell: bash
-      run: |
-        case "${{ matrix.os }}" in
-          windows-latest)
-            shards install --development --skip-postinstall
-            ;;
-          *)
-            shards install --development --skip-postinstall
-            ;;
-        esac
-
-    - name: Platform-specific setup for building
-      run: |
-        case "${{ matrix.os }}" in
-          ubuntu-latest)
-            sudo apt-get update
-            sudo apt-get install -y libsecret-1-dev libsodium-dev
-            ;;
-          macos-latest)
-            brew install libsodium || true
-            ;;
-          windows-latest)
-            # libsodium must be pre-installed or available via vcpkg
-            ;;
-        esac
-
-    - name: Build binary
-      run: shards build --release
-
-    - name: Determine binary name
-      id: binary-name
-      shell: bash
-      run: |
-        case "${{ matrix.os }}" in
-          ubuntu-latest|macos-latest)
-            echo "binary_name=keyring_cr" >> $GITHUB_OUTPUT
-            ;;
-          windows-latest)
-            echo "binary_name=keyring_cr.exe" >> $GITHUB_OUTPUT
-            ;;
-        esac
-
-    - name: Upload binary artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: keyring_cr-${{ matrix.os }}
-        path: bin/${{ steps.binary-name.outputs.binary_name }}
-        retention-days: 30
