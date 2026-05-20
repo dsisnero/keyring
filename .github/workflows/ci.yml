@@ -263,6 +263,52 @@ jobs:
         draft: false
         prerelease: false
 
+  kwallet:
+    runs-on: ubuntu-latest
+    name: KWallet backend tests
+    continue-on-error: true
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Crystal
+      uses: crystal-lang/install-crystal@v1
+      with:
+        crystal: latest
+
+    - name: Install KDE KWallet deps
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          libkf5wallet-bin \
+          qdbus-qt5 \
+          dbus \
+          dbus-x11 \
+          libsodium-dev
+
+    - name: Install shards
+      run: shards install --skip-postinstall
+
+    - name: Start D-Bus and KWallet
+      run: |
+        export XDG_RUNTIME_DIR=/tmp/runtime-root
+        mkdir -p "$XDG_RUNTIME_DIR"
+        chmod 700 "$XDG_RUNTIME_DIR"
+        DBUS_ADDR=$(dbus-daemon --session --print-address --fork)
+        echo "DBUS_SESSION_BUS_ADDRESS=$DBUS_ADDR" >> $GITHUB_ENV
+        echo "D-Bus: $DBUS_ADDR"
+        sleep 1
+        # Start KWallet headless
+        export KDE_FULL_SESSION=false
+        export QT_QPA_PLATFORM=offscreen
+        kwalletd5 &
+        sleep 2
+        # Check if KWallet responded
+        qdbus org.kde.kwalletd5 /modules/kwalletd5 org.kde.KWallet.isEnabled 2>/dev/null && echo "KWallet available" || echo "KWallet not detected"
+
+    - name: Run KWallet tests
+      run: crystal spec spec/keyring/kwallet_backend_spec.cr
+
   binaries:
     needs: [test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
