@@ -73,6 +73,9 @@ module Keyring
       verbose = false
       quiet = false
       confirm = false
+      list_backends_flag = false
+      disable_flag = false
+      keyring_backend = nil
       config_key = nil
       config_value = nil
       get_mode = "password"
@@ -106,6 +109,9 @@ module Keyring
         opts.on("--verbose", "Enable verbose logging") { verbose = true }
         opts.on("--quiet", "Suppress non-error output") { quiet = true }
         opts.on("--confirm", "Require confirmation for destructive operations") { confirm = true }
+        opts.on("--list-backends", "List available keyring backends and exit") { list_backends_flag = true }
+        opts.on("--disable", "Disable keyring and exit") { disable_flag = true }
+        opts.on("-b BACKEND", "--keyring-backend=BACKEND", "Specify keyring backend by name") { |backend| keyring_backend = backend }
         opts.on("-k KEY", "--key=KEY", "Config key") { |key| config_key = key }
         opts.on("--value=VALUE", "Config value (for config set)") { |val| config_value = val }
         opts.on("-h", "--help", "Show this help") do
@@ -126,6 +132,18 @@ module Keyring
 
       begin
         parser.parse(args)
+
+        # Handle standalone flags (no command needed)
+        if list_backends_flag
+          Keyring.new.list_available_backends.each { |name| out_puts name }
+          terminate(0)
+        end
+
+        if disable_flag
+          ::Keyring.disable
+          terminate(0)
+        end
+
         # If no command and no args, show help and exit 0
         if args.empty? && command.nil?
           out_puts parser
@@ -139,7 +157,13 @@ module Keyring
           ENV["KEYRING_LOG_LEVEL"] = "ERROR"
         end
 
-        keyring = Keyring.new(config_path)
+        keyring = if backend_name = keyring_backend
+                    k = Keyring.new(config_path)
+                    k.switch_to_backend(backend_name)
+                    k
+                  else
+                    Keyring.new(config_path)
+                  end
 
         case command
         when "get"
@@ -390,7 +414,7 @@ _keyring_cr_completion() {
   esac
 
   if [[ $cur == -* ]]; then
-    COMPREPLY=( $(compgen -W "--service --username --password --password-stdin --config --query --file --output --verbose --quiet --help --version --confirm --key --value" -- "$cur") )
+    COMPREPLY=( $(compgen -W "--service --username --password --password-stdin --config --query --file --output --mode --verbose --quiet --help --version --confirm --list-backends --disable --keyring-backend --key --value" -- "$cur") )
   else
     COMPREPLY=( $(compgen -W "$COMMANDS" -- "$cur") )
   fi

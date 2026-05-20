@@ -398,5 +398,59 @@ module Keyring
         e.code.should eq(1)
       end
     end
+
+    it "--list-backends prints available backends" do
+      stdout_io = IO::Memory.new; stderr_io = IO::Memory.new
+      CLI.set_io(stdout_io, stderr_io)
+      begin
+        CLI.run(["--list-backends"])
+        fail "expected FinishedCLI"
+      rescue e : CLI::FinishedCLI
+        e.code.should eq(0)
+      end
+      output = stdout_io.to_s
+      output.includes?("FileBackend").should be_true
+    end
+
+    it "--disable creates config file with NullBackend" do
+      stdout_io = IO::Memory.new; stderr_io = IO::Memory.new
+      CLI.set_io(stdout_io, stderr_io)
+      config_path = File.join(ENV["XDG_CONFIG_HOME"], "keyring_cr", "config.yml")
+      File.delete(config_path) if File.exists?(config_path)
+      begin
+        CLI.run(["--disable"])
+        fail "expected FinishedCLI"
+      rescue e : CLI::FinishedCLI
+        e.code.should eq(0)
+      end
+      File.exists?(config_path).should be_true
+      File.read(config_path).includes?("NullBackend").should be_true
+    end
+
+    it "--disable refuses to overwrite existing config" do
+      stdout_io = IO::Memory.new; stderr_io = IO::Memory.new
+      CLI.set_io(stdout_io, stderr_io)
+      # First disable creates file; second should fail
+      begin
+        CLI.run(["--disable"])
+        fail "expected FinishedCLI"
+      rescue e : CLI::FinishedCLI
+      end
+      begin
+        CLI.run(["--disable"])
+        fail "expected FinishedCLI"
+      rescue e : CLI::FinishedCLI
+        e.code.should eq(1)
+      end
+      stderr_io.to_s.includes?("Refusing").should be_true
+    end
+
+    it "--keyring-backend switches to specified backend" do
+      stdout_io = IO::Memory.new; stderr_io = IO::Memory.new
+      CLI.set_io(stdout_io, stderr_io)
+      service = "cli-kb-#{Random.rand(10_000)}"
+      CLI.run(["set", "-s", service, "-u", "u", "-p", "pw", "-b", "FileBackend"])
+      Keyring.new.get_password(service, "u").should eq("pw")
+    end
   end
 end

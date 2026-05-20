@@ -237,4 +237,23 @@ module Keyring
       self.class.qdbus(*args)
     end
   end
+
+  class KWallet4Backend < KWalletBackend
+    def self.available? : Bool
+      return false unless system("which qdbus > /dev/null 2>&1")
+      begin
+        output = qdbus("org.freedesktop.DBus", "/", "org.freedesktop.DBus", "ListActivatableNames")
+        output.includes?("org.kde.kwalletd")
+      rescue
+        false
+      end
+    end
+
+    def initialize
+      @handle = -1
+      @connected = false
+      @bus_name = "org.kde.kwalletd"
+      @object_path = "/modules/kwalletd"
+    end
+  end
 end

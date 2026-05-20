@@ -21,7 +21,7 @@ Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 - [x] `WindowsBackend` — Windows Credential Manager via win32cr
 - [x] `LinuxSecretServiceBackend` — Linux Secret Service via libsecret D-Bus
 - [x] `KWalletBackend` — KDE KWallet5 via qdbus CLI (upstream uses dbus-python)
-- [ ] KDE KWallet4 backend variant (`DBusKeyringKWallet4`) — separate bus/object path
+- [x] KDE KWallet4 backend variant (`DBusKeyringKWallet4`) — separate bus/object path
 - [x] `ChainerBackend` — iterate multiple backends for reads, try writes on each
 - [x] `NullBackend` — no-op backend
 - [x] `FailBackend` — always raises
@@ -41,8 +41,8 @@ Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 - [x] `available?` class method — viability check (returns Bool, Crystal extension)
 - [ ] `viable` class property — upstream wraps priority in exception trap (Crystal uses `available?`)
 - [ ] `name` class property — display name derived from module/class (Crystal uses `class.name`)
-- [ ] `set_properties_from_env()` — set backend properties from `KEYRING_PROPERTY_*` env vars
-- [ ] `with_properties(**kwargs)` — clone backend with overridden properties
+- [x] `set_properties_from_env()` — set backend properties from `KEYRING_PROPERTY_*` env vars
+- [x] `with_properties(**kwargs)` — clone backend with overridden properties
 - [x] Backend health check — lightweight validation on init
 - [x] Backend failover — auto-switch to next viable backend on persistent failure
 - [x] `supports_metadata?` / `set_metadata` — optional per-backend metadata storage
@@ -61,10 +61,9 @@ Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 - [x] `completion` command — generate bash/zsh shell completion scripts
 - [x] `update` command — update existing credential's password
 - [x] `diagnose` command — show config path and data root path
-- [ ] `--list-backends` flag — print all available backends and exit
-- [ ] `--disable` flag — disable keyring and exit (calls `disable()`)
-- [ ] `--keyring-path` flag — add custom path for loading backends
-- [ ] `--keyring-backend` flag — specify backend by name to use
+- [x] `--list-backends` flag — print all available backends and exit
+- [x] `--disable` flag — disable keyring and exit (calls `disable()`)
+- [x] `--keyring-backend` flag — specify backend by name to use
 - [ ] `--print-completion` flag — print shell completion script (upstream uses shtab)
 - [ ] Dynamic backend completion (tab-complete available backend names for --keyring-backend)
 - [ ] Upstream get modes: `--mode creds` returns both username + password on separate lines
@@ -74,7 +73,7 @@ Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 - [x] `Credential` struct — service, username, password, metadata, timestamps
 - [x] Password encryption/decryption via Sodium SecretBox
 - [x] `add_metadata(key, value)` / `remove_metadata(key)`
-- [ ] `SchemeSelectable` — backend base class for alternate attribute schemes (KeePassXC)
+- [x] `SchemeSelectable` — backend base class for alternate attribute schemes (KeePassXC)
 - [ ] `SimpleCredential` — upstream simple username+password credential (Crystal Credential covers both)
 - [ ] `AnonymousCredential` — username-less credential for get --mode creds
 - [x] `EnvironCredential` — credentials sourced from environment variables
@@ -135,9 +134,9 @@ Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 - [x] `test_different_user` — multiple users per service
 - [x] `test_credential` — get_credential with/without username
 - [x] `test_empty_username` — deprecated empty username still works
-- [ ] `test_set_properties` — KEYRING_PROPERTY_* env var parsing
-- [ ] `test_new_with_properties` — with_properties() clone behavior
-- [ ] `test_wrong_username_returns_none` — non-existent user returns nil
+- [x] `test_set_properties` — KEYRING_PROPERTY_* env var parsing
+- [x] `test_new_with_properties` — with_properties() clone behavior
+- [x] `test_wrong_username_returns_none` — non-existent user returns nil
 
 ### Per-Backend Tests
 - [x] macOS backend spec

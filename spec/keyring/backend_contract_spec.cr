@@ -209,6 +209,22 @@ module Keyring
         backend.delete_password(sv, "user1")
         backend.delete_password(sv, "user2")
       end
+
+      it "test_set_properties" do
+        with_env("KEYRING_PROPERTY_FOO_BAR", "fizz buzz") do
+          backend = factory.make_backend
+          backend.set_properties_from_env
+          backend["foo_bar"].should eq("fizz buzz")
+        end
+      end
+
+      it "test_new_with_properties" do
+        backend = factory.make_backend
+        alt = backend.with_properties(foo: "bar")
+        alt.should_not be backend
+        alt["foo"].should eq("bar")
+        backend["foo"].should be_nil
+      end
     end
   end
 

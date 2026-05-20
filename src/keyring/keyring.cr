@@ -314,6 +314,7 @@ module Keyring
       {% if flag?(:linux) %}
         list << LinuxSecretServiceBackend
         list << KWalletBackend
+        list << KWallet4Backend
       {% end %}
       list << FileBackend
       list
