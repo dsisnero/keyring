@@ -11,16 +11,16 @@ targets:
 dependencies:
   win32cr:
     github: mjblack/win32cr
+  sodium:
+    github: didactic-drunk/sodium.cr
+    branch: master
 
 development_dependencies:
   webmock:
     github: manastech/webmock.cr
-  sodium:
-    github: didactic-drunk/sodium.cr
-    branch: master
   ameba:
     github: crystal-ameba/ameba
 
-crystal: ">= 1.14.0"
+crystal: ">= 1.15.0"
 
 license: MIT

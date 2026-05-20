@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        crystal: ["1.14.0", "latest"]
+        crystal: ["latest"]
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -26,7 +26,16 @@ jobs:
         crystal: ${{ matrix.crystal }}
 
     - name: Install dependencies
-      run: shards install --development
+      shell: bash
+      run: |
+        case "${{ matrix.os }}" in
+          windows-latest)
+            shards install --skip-postinstall
+            ;;
+          *)
+            shards install
+            ;;
+        esac
 
     - name: Cache shards
       uses: actions/cache@v4
@@ -67,28 +76,8 @@ jobs:
 
     - name: Run tests
       env:
-        # For macOS tests, avoid permission dialogs in CI
         KEYRING_TEST_MODE: "true"
-        # For Linux tests, ensure secret service is available
-        DBUS_SESSION_BUS_ADDRESS: ${{ matrix.os == 'ubuntu-latest' && 'unix:path=/run/user/1000/bus' || '' }}
-      run: |
-        case "${{ matrix.os }}" in
-          ubuntu-latest)
-            # Run tests with GNOME Keyring available
-            crystal spec --exclude-tag integration
-            ;;
-          macos-latest)
-            # Run macOS tests (excluding Linux-specific tests)
-            crystal spec --exclude-tag linux
-            ;;
-          windows-latest)
-            # Run Windows tests (excluding Linux/macOS-specific tests)
-            crystal spec --exclude-tag linux --exclude-tag darwin
-            ;;
-          *)
-            crystal spec
-            ;;
-        esac
+      run: crystal spec
 
     - name: Build project
       run: shards build
@@ -200,14 +189,29 @@ jobs:
         crystal: latest
 
     - name: Install dependencies
-      run: shards install
+      shell: bash
+      run: |
+        case "${{ matrix.os }}" in
+          windows-latest)
+            shards install --skip-postinstall
+            ;;
+          *)
+            shards install --skip-postinstall
+            ;;
+        esac
 
     - name: Platform-specific setup for building
       run: |
         case "${{ matrix.os }}" in
           ubuntu-latest)
             sudo apt-get update
-            sudo apt-get install -y libsecret-1-dev
+            sudo apt-get install -y libsecret-1-dev libsodium-dev
+            ;;
+          macos-latest)
+            brew install libsodium
+            ;;
+          windows-latest)
+            # libsodium must be pre-installed or available via vcpkg
             ;;
         esac
 
@@ -279,14 +283,29 @@ jobs:
         crystal: latest
 
     - name: Install dependencies
-      run: shards install
+      shell: bash
+      run: |
+        case "${{ matrix.os }}" in
+          windows-latest)
+            shards install --development --skip-postinstall
+            ;;
+          *)
+            shards install --development --skip-postinstall
+            ;;
+        esac
 
-    - name: Platform-specific setup
+    - name: Platform-specific setup for building
       run: |
         case "${{ matrix.os }}" in
           ubuntu-latest)
             sudo apt-get update
-            sudo apt-get install -y libsecret-1-dev
+            sudo apt-get install -y libsecret-1-dev libsodium-dev
+            ;;
+          macos-latest)
+            brew install libsodium || true
+            ;;
+          windows-latest)
+            # libsodium must be pre-installed or available via vcpkg
             ;;
         esac
 
