@@ -31,14 +31,14 @@ jobs:
         case "${{ matrix.os }}" in
           ubuntu-latest)
             sudo apt-get update
-            sudo apt-get install -y libsodium-dev libsecret-1-dev libglib2.0-dev libgobject-2.0-dev
+            sudo apt-get install -y libsodium-dev libsecret-1-dev libglib2.0-dev
             gcc -c -fPIC src/keyring/schema_shim.c -o src/keyring/schema_shim.o $(pkg-config --cflags libsecret-1)
             ;;
           macos-latest)
             brew install libsodium || true
             ;;
           windows-latest)
-            vcpkg install libsodium --triplet x64-windows
+            vcpkg install
             ;;
         esac
 
@@ -137,14 +137,14 @@ jobs:
         case "${{ matrix.os }}" in
           ubuntu-latest)
             sudo apt-get update
-            sudo apt-get install -y libsodium-dev libsecret-1-dev libglib2.0-dev libgobject-2.0-dev
+            sudo apt-get install -y libsodium-dev libsecret-1-dev libglib2.0-dev
             gcc -c -fPIC src/keyring/schema_shim.c -o src/keyring/schema_shim.o $(pkg-config --cflags libsecret-1)
             ;;
           macos-latest)
             brew install libsodium || true
             ;;
           windows-latest)
-            vcpkg install libsodium --triplet x64-windows
+            vcpkg install
             ;;
         esac
 
