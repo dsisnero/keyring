@@ -76,6 +76,7 @@ module Keyring
       list_backends_flag = false
       disable_flag = false
       keyring_backend = nil
+      keyring_path = nil
       config_key = nil
       config_value = nil
       get_mode = "password"
@@ -115,6 +116,11 @@ module Keyring
         opts.on("--list-backends", "List available keyring backends and exit") { list_backends_flag = true }
         opts.on("--disable", "Disable keyring and exit") { disable_flag = true }
         opts.on("-b BACKEND", "--keyring-backend=BACKEND", "Specify keyring backend by name") { |backend| keyring_backend = backend }
+        opts.on("--keyring-path=PATH", "Path to keyring data/config directory") { |path| keyring_path = path }
+        opts.on("--print-completion=SHELL", "Print shell completion script (bash or zsh)") do |shell|
+          out_puts generate_completion(shell)
+          terminate(0)
+        end
         opts.on("-k KEY", "--key=KEY", "Config key") { |key| config_key = key }
         opts.on("--value=VALUE", "Config value (for config set)") { |val| config_value = val }
         opts.on("-h", "--help", "Show this help") do
@@ -137,6 +143,11 @@ module Keyring
         sub_args = args
 
         # Handle standalone flags (no command needed)
+        if keyring_path
+          ENV["XDG_DATA_HOME"] = keyring_path
+          ENV["XDG_CONFIG_HOME"] = keyring_path
+        end
+
         if list_backends_flag
           Keyring.new.list_available_backends.each { |name| out_puts name }
           terminate(0)

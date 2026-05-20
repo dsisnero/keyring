@@ -33,6 +33,9 @@ module Keyring
     # Class-level instance for module-level API (keyring=/keyring)
     @@current_keyring : Keyring? = nil
 
+    # Backend limit filter (callable taking Backend.class, returning Bool)
+    @@backend_limit : Proc(Backend.class, Bool)? = nil
+
     # Cache for backend availability checks across instances
     @@availability_cache = Hash(String, Bool).new
     # Test hook: override backend candidates list
@@ -132,11 +135,27 @@ module Keyring
         }
     end
 
-    # Check if a backend is recommended (priority >= 1).
-    # Mirrors Python keyring.core.recommended().
-    def self.recommended?(backend : Backend) : Bool
-      # All backends in Crystal are implicitly recommended
-      true
+    # Detect and initialize a backend with optional caller-supplied filter.
+    # Mirrors Python keyring.core._detect_backend(limit).
+    def self._detect_backend(limit : Proc(Backend.class, Bool)? = nil) : Backend
+      @@backend_limit = limit
+      # Try env, then config, then best available
+      backend = load_env || load_config || best_available_backend
+      backend
+    end
+
+    # Return the best available backend considering the limit filter.
+    private def self.best_available_backend : Backend
+      candidates = @@candidates_override || get_candidate_list_static
+      if limit = @@backend_limit
+        candidates = candidates.select(&limit)
+      end
+      klass = candidates.find(&.viable?)
+      if klass
+        klass.new
+      else
+        FailBackend.new
+      end
     end
 
     # Get the static candidate list (not instance-dependent).

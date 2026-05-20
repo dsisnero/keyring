@@ -27,7 +27,7 @@ Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 - [x] `FailBackend` — always raises
 - [x] `FileBackend` — Crystal-specific encrypted JSON file storage
 - [ ] Backend plugin/registration system (`_load_plugins`, `get_all_keyring`) — upstream uses setuptools entry points; Crystal compile-time requires are a partial equivalent
-- [ ] `_detect_backend(limit)` — backend detection with caller-supplied filter
+- [x] `_detect_backend(limit)` — backend detection with caller-supplied filter
 - [x] `load_keyring(keyring_name)` — load backend by fully-qualified name
 - [x] `load_env()` — load backend from `PYTHON_KEYRING_BACKEND` env var (Crystal has `KEYRING_BACKEND` config env but not module import)
 - [x] `load_config()` — load backend from keyringrc.cfg (Crystal config.yml has `preferred_backend` but not full dynamic loading)
@@ -64,8 +64,8 @@ Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 - [x] `--list-backends` flag — print all available backends and exit
 - [x] `--disable` flag — disable keyring and exit (calls `disable()`)
 - [x] `--keyring-backend` flag — specify backend by name to use
-- [ ] `--print-completion` flag — print shell completion script (upstream uses shtab)
-- [ ] Dynamic backend completion (tab-complete available backend names for --keyring-backend)
+- [x] `--print-completion` flag — print shell completion script (upstream uses shtab)
+- [x] Dynamic backend completion (tab-complete available backend names for --keyring-backend)
 - [x] `--mode creds` returns both username + password on separate lines
 
 ## Credentials
@@ -87,7 +87,7 @@ Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 - [x] `log_level` / `log_file` — logging configuration
 - [x] `default_service` — optional default service name
 - [x] `set_property(key, value)` / `save` — programmatic config mutation
-- [ ] Backend discovery from config file with keyring-path support (upstream: `load_config` + `_load_keyring_path`)
+- [x] Backend discovery from config file with keyring-path support (upstream: `load_config` + `_load_keyring_path`)
 
 ## Encryption
 
