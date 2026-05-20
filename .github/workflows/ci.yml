@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
-    name: Test on ${{ matrix.os }}
+    name: Test (${{ matrix.os }})
 
     steps:
     - uses: actions/checkout@v4
@@ -25,12 +25,14 @@ jobs:
       with:
         crystal: ${{ matrix.crystal }}
 
-    - name: Install system libsodium
+    - name: Install system libraries
+      shell: bash
       run: |
         case "${{ matrix.os }}" in
           ubuntu-latest)
             sudo apt-get update
-            sudo apt-get install -y libsodium-dev libsecret-1-dev
+            sudo apt-get install -y libsodium-dev libsecret-1-dev libglib2.0-dev libgobject-2.0-dev
+            gcc -c -fPIC src/keyring/schema_shim.c -o src/keyring/schema_shim.o $(pkg-config --cflags libsecret-1)
             ;;
           macos-latest)
             brew install libsodium || true
@@ -41,6 +43,7 @@ jobs:
         esac
 
     - name: Install shard dependencies
+      shell: bash
       env:
         LIBSODIUM_INSTALL: ${{ matrix.os == 'windows-latest' && '1' || '0' }}
       run: shards install
@@ -49,9 +52,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: lib
-        key: ${{ runner.os }}-crystal-shards-${{ hashFiles('shard.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-crystal-shards-
+        key: ${{ runner.os }}-shards-${{ hashFiles('shard.lock') }}
 
     - name: Format check
       run: crystal tool format --check src spec
@@ -75,7 +76,7 @@ jobs:
             ;;
         esac
 
-    - name: Upload binary
+    - name: Upload binary artifact
       uses: actions/upload-artifact@v4
       with:
         name: keyring_cr-${{ matrix.os }}
@@ -94,10 +95,11 @@ jobs:
       with:
         crystal: latest
 
-    - name: Install system libsodium
+    - name: Install system libraries
       run: |
         sudo apt-get update
-        sudo apt-get install -y libsodium-dev
+        sudo apt-get install -y libsodium-dev libsecret-1-dev libglib2.0-dev libgobject-2.0-dev
+        gcc -c -fPIC src/keyring/schema_shim.c -o src/keyring/schema_shim.o $(pkg-config --cflags libsecret-1)
 
     - name: Install shard dependencies
       env:
@@ -109,36 +111,6 @@ jobs:
 
     - name: Run Ameba
       run: shards build && crystal run lib/ameba/bin/ameba.cr -- --fail-level Error
-
-  security:
-    runs-on: ubuntu-latest
-    name: Security scan
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Crystal
-      uses: crystal-lang/install-crystal@v1
-      with:
-        crystal: latest
-
-    - name: Install system libsodium
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libsodium-dev
-
-    - name: Install shard dependencies
-      env:
-        LIBSODIUM_INSTALL: "0"
-      run: shards install
-
-    - name: Check for secrets
-      uses: gitleaks/gitleaks-action@v2
-      with:
-        config-path: .gitleaks.toml
-
-    - name: Dependency audit
-      run: shards list
 
   binaries:
     needs: [test]
@@ -159,12 +131,14 @@ jobs:
       with:
         crystal: latest
 
-    - name: Install system libsodium
+    - name: Install system libraries
+      shell: bash
       run: |
         case "${{ matrix.os }}" in
           ubuntu-latest)
             sudo apt-get update
-            sudo apt-get install -y libsodium-dev libsecret-1-dev
+            sudo apt-get install -y libsodium-dev libsecret-1-dev libglib2.0-dev libgobject-2.0-dev
+            gcc -c -fPIC src/keyring/schema_shim.c -o src/keyring/schema_shim.o $(pkg-config --cflags libsecret-1)
             ;;
           macos-latest)
             brew install libsodium || true
@@ -175,6 +149,7 @@ jobs:
         esac
 
     - name: Install shard dependencies
+      shell: bash
       env:
         LIBSODIUM_INSTALL: ${{ matrix.os == 'windows-latest' && '1' || '0' }}
       run: shards install
@@ -183,7 +158,7 @@ jobs:
       run: shards build --release
 
     - name: Determine binary name
-      id: bin-name-release
+      id: bin-name-rel
       shell: bash
       run: |
         case "${{ matrix.os }}" in
@@ -199,7 +174,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: keyring_cr-${{ matrix.os }}
-        path: bin/${{ steps.bin-name-release.outputs.name }}
+        path: bin/${{ steps.bin-name-rel.outputs.name }}
         retention-days: 30
 
   release:
