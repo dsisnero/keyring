@@ -113,6 +113,13 @@ clean:
 	rm -rf .shards/
 	find . -name "*.dwarf" -delete
 
+# Apply Windows compat patches for POSIX-only shard dependencies
+patch-windows:
+	cp patches/windows/mmap/mmap.cr lib/mmap/src/mmap.cr
+
+unpatch-windows:
+	cd lib/mmap && git checkout -- src/mmap.cr 2>/dev/null || true
+
 # Container targets (work with Apple container, docker-compose, or docker)
 docker-build:
 	@echo "Building with $(CONTAINER_ENGINE)..."

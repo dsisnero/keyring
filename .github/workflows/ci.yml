@@ -49,6 +49,7 @@ jobs:
         case "${{ matrix.os }}" in
           windows-latest)
             shards install --skip-postinstall 2>&1 | grep -v "Could not find executable" || true
+            cp patches/windows/mmap/mmap.cr lib/mmap/src/mmap.cr
             ;;
           *)
             shards install
@@ -63,8 +64,8 @@ jobs:
       if: matrix.os == 'macos-latest'
       run: crystal spec
 
-    - name: Run tests (Linux - exclude secret service/kwallet)
-      if: matrix.os == 'ubuntu-latest'
+    - name: Run tests (Linux/Windows - exclude secret service/kwallet)
+      if: matrix.os != 'macos-latest'
       run: crystal spec spec/keyring/backend_contract_spec.cr spec/keyring/chainer_backend_spec.cr spec/keyring/circuit_breaker_spec.cr spec/keyring/cli_spec.cr spec/keyring/config_spec.cr spec/keyring/credential_spec.cr spec/keyring/encryption_spec.cr spec/keyring/file_backend_spec.cr spec/keyring/metrics_spec.cr spec/keyring/null_fail_backend_spec.cr spec/keyring/platform_spec.cr spec/keyring/reliability_spec.cr spec/keyring/retryable_spec.cr spec/keyring/backend_priority_spec.cr spec/keyring/backend_metadata_spec.cr spec/integration/end_to_end_spec.cr
 
     - name: Build binary
@@ -163,6 +164,7 @@ jobs:
         case "${{ matrix.os }}" in
           windows-latest)
             shards install --skip-postinstall 2>&1 | grep -v "Could not find executable" || true
+            cp patches/windows/mmap/mmap.cr lib/mmap/src/mmap.cr
             ;;
           *)
             shards install
