@@ -164,17 +164,9 @@ jobs:
       shell: bash
       env:
         LIBSODIUM_INSTALL: "0"
-      run: |
-        case "${{ matrix.os }}" in
-          windows-latest)
-            shards install --skip-postinstall
-            ;;
-          *)
-            shards install
-            ;;
-        esac
+      run: shards install
 
-    - name: Build release binary
+    - name: Build binary
       run: shards build --release
 
     - name: Determine binary name
