@@ -1,0 +1,64 @@
+# Dockerfile for testing KDE KWallet backend with D-Bus
+FROM crystallang/crystal:latest
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install KDE KWallet + qdbus + D-Bus + secret service deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    git \
+    gcc \
+    # KDE KWallet backend daemon
+    libkf5wallet-bin \
+    # qdbus CLI for D-Bus communication
+    qdbus-qt5 \
+    # D-Bus session bus
+    dbus \
+    dbus-x11 \
+    # libsecret + GNOME Keyring (for SecretService tests too)
+    libsecret-1-0 \
+    libsecret-1-dev \
+    gnome-keyring \
+    # Encryption
+    libsodium-dev \
+    # Cleanup
+    && rm -rf /var/lib/apt/lists/*
+
+# Verify Crystal
+RUN crystal --version
+
+WORKDIR /workspace
+
+# Create startup script: launch D-Bus + KWallet daemon
+# KWallet D-Bus API uses window ID 0 for headless (no display needed)
+RUN printf '#!/bin/bash\n\
+set -e\n\
+export XDG_RUNTIME_DIR=/tmp/runtime-root\n\
+mkdir -p "$XDG_RUNTIME_DIR"\n\
+chmod 700 "$XDG_RUNTIME_DIR"\n\
+# Start D-Bus session daemon\n\
+dbus-daemon --session --print-address --fork > /tmp/dbus-addr\n\
+sleep 1\n\
+export DBUS_SESSION_BUS_ADDRESS=$(cat /tmp/dbus-addr)\n\
+echo "D-Bus: $DBUS_SESSION_BUS_ADDRESS"\n\
+# Headless Qt/KDE\n\
+export KDE_FULL_SESSION=false\n\
+export QT_QPA_PLATFORM=offscreen\n\
+export DISPLAY=\n\
+# Start KWallet daemon (D-Bus auto-activates it on first call)\n\
+# Pre-warm by pinging; first call may create default wallet with empty password\n\
+qdbus org.kde.kwalletd5 /modules/kwalletd5 org.kde.KWallet.isEnabled 2>/dev/null && echo "KWallet available" || echo "KWallet not detected (may be OK if not KDE)"\n\
+# Run the command\n\
+"$@"\n\
+ret=$?\n\
+# Cleanup background D-Bus\n\
+kill %1 2>/dev/null || true\n\
+exit $ret\n\
+' > /usr/local/bin/with-kwallet && chmod +x /usr/local/bin/with-kwallet
+
+# Verify tools available
+RUN which kwalletd5 && which qdbus
+
+# Default: run KWallet-specific tests
+CMD ["with-kwallet", "sh", "-c", "shards install --skip-postinstall && crystal spec spec/keyring/kwallet_backend_spec.cr"]

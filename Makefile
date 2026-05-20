@@ -169,3 +169,25 @@ endif
 test-linux: docker-build
 	$(RUN_CMD) with-keyring sh -c "cd /workspace && gcc -c -fPIC src/keyring/schema_shim.c -o src/keyring/schema_shim.o \$$(pkg-config --cflags libsecret-1) 2>&1 && shards check || shards install --skip-postinstall && crystal spec spec/keyring/linux_backend_spec.cr && crystal spec spec/keyring/kwallet_backend_spec.cr"
 dev-linux: docker-build docker-dev
+
+# KWallet-specific container testing
+docker-build-kwallet:
+	@echo "Building KWallet test image..."
+ifeq ($(CONTAINER_ENGINE),docker)
+	docker build -t keyring-kwallet-test -f Dockerfile.kwallet .
+else ifeq ($(CONTAINER_ENGINE),container)
+	container build --tag keyring-kwallet-test --file Dockerfile.kwallet .
+else
+	@echo "No container runtime found"
+endif
+
+docker-test-kwallet:
+ifeq ($(CONTAINER_ENGINE),docker)
+	docker run --rm -v $(PWD):/workspace keyring-kwallet-test
+else ifeq ($(CONTAINER_ENGINE),container)
+	container run --rm -v $(PWD):/workspace keyring-kwallet-test
+else
+	@echo "No container runtime found"
+endif
+
+test-kwallet: docker-build-kwallet docker-test-kwallet

@@ -210,3 +210,117 @@ jobs:
       with:
         files: artifacts/**/*
         generate_release_notes: true
+        draft: false
+        prerelease: false
+
+  kwallet:
+    runs-on: ubuntu-latest
+    name: KWallet backend tests
+    continue-on-error: true
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Crystal
+      uses: crystal-lang/install-crystal@v1
+      with:
+        crystal: latest
+
+    - name: Install KDE KWallet deps
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          libkf5wallet-bin \
+          qdbus-qt5 \
+          dbus \
+          dbus-x11 \
+          libsodium-dev
+
+    - name: Install shards
+      run: shards install --skip-postinstall
+
+    - name: Start D-Bus and KWallet
+      run: |
+        export XDG_RUNTIME_DIR=/tmp/runtime-root
+        mkdir -p "$XDG_RUNTIME_DIR"
+        chmod 700 "$XDG_RUNTIME_DIR"
+        DBUS_ADDR=$(dbus-daemon --session --print-address --fork)
+        echo "DBUS_SESSION_BUS_ADDRESS=$DBUS_ADDR" >> $GITHUB_ENV
+        echo "D-Bus: $DBUS_ADDR"
+        sleep 1
+        export KDE_FULL_SESSION=false
+        export QT_QPA_PLATFORM=offscreen
+        kwalletd5 &
+        sleep 2
+        qdbus org.kde.kwalletd5 /modules/kwalletd5 org.kde.KWallet.isEnabled 2>/dev/null && echo "KWallet available" || echo "KWallet not detected"
+
+    - name: Run KWallet tests
+      run: crystal spec spec/keyring/kwallet_backend_spec.cr
+
+  binaries:
+    needs: [test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+      fail-fast: false
+
+    runs-on: ${{ matrix.os }}
+    name: Binary artifact (${{ matrix.os }})
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Crystal
+      uses: crystal-lang/install-crystal@v1
+      with:
+        crystal: latest
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        case "${{ matrix.os }}" in
+          windows-latest)
+            shards install --development --skip-postinstall
+            ;;
+          *)
+            shards install --development --skip-postinstall
+            ;;
+        esac
+
+    - name: Platform-specific setup for building
+      run: |
+        case "${{ matrix.os }}" in
+          ubuntu-latest)
+            sudo apt-get update
+            sudo apt-get install -y libsecret-1-dev libsodium-dev
+            ;;
+          macos-latest)
+            brew install libsodium || true
+            ;;
+          windows-latest)
+            ;;
+        esac
+
+    - name: Build binary
+      run: shards build --release
+
+    - name: Determine binary name
+      id: binary-name
+      shell: bash
+      run: |
+        case "${{ matrix.os }}" in
+          ubuntu-latest|macos-latest)
+            echo "binary_name=keyring_cr" >> $GITHUB_OUTPUT
+            ;;
+          windows-latest)
+            echo "binary_name=keyring_cr.exe" >> $GITHUB_OUTPUT
+            ;;
+        esac
+
+    - name: Upload binary artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: keyring_cr-${{ matrix.os }}
+        path: bin/${{ steps.binary-name.outputs.binary_name }}
+        retention-days: 30
