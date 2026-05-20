@@ -31,8 +31,10 @@ jobs:
         case "${{ matrix.os }}" in
           ubuntu-latest)
             sudo apt-get update
-            sudo apt-get install -y libsodium-dev libsecret-1-dev libglib2.0-dev
+            sudo apt-get install -y libsodium-dev libsecret-1-dev libglib2.0-dev dbus-x11 gnome-keyring
             gcc -c -fPIC src/keyring/schema_shim.c -o src/keyring/schema_shim.o $(pkg-config --cflags libsecret-1)
+            eval "$(dbus-launch --sh-syntax)"
+            export $(gnome-keyring-daemon --start --components=secrets)
             ;;
           macos-latest)
             brew install libsodium || true
@@ -45,7 +47,7 @@ jobs:
     - name: Install shard dependencies
       shell: bash
       env:
-        LIBSODIUM_INSTALL: ${{ matrix.os == 'windows-latest' && '1' || '0' }}
+        LIBSODIUM_INSTALL: "0"
       run: shards install
 
     - name: Cache shards
@@ -137,8 +139,10 @@ jobs:
         case "${{ matrix.os }}" in
           ubuntu-latest)
             sudo apt-get update
-            sudo apt-get install -y libsodium-dev libsecret-1-dev libglib2.0-dev
+            sudo apt-get install -y libsodium-dev libsecret-1-dev libglib2.0-dev dbus-x11 gnome-keyring
             gcc -c -fPIC src/keyring/schema_shim.c -o src/keyring/schema_shim.o $(pkg-config --cflags libsecret-1)
+            eval "$(dbus-launch --sh-syntax)"
+            export $(gnome-keyring-daemon --start --components=secrets)
             ;;
           macos-latest)
             brew install libsodium || true
@@ -151,7 +155,7 @@ jobs:
     - name: Install shard dependencies
       shell: bash
       env:
-        LIBSODIUM_INSTALL: ${{ matrix.os == 'windows-latest' && '1' || '0' }}
+        LIBSODIUM_INSTALL: "0"
       run: shards install
 
     - name: Build release binary
