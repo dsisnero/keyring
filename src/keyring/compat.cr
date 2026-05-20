@@ -15,19 +15,28 @@
   {% if !LibC.has_constant?(:UInt64T) %}
     lib LibC
       alias UInt64T = UInt64
-      alias Int64T = Int64
+      alias Int64T  = Int64
     end
   {% end %}
 
   {% if !LibC.has_constant?(:MAP_ANON) %}
     lib LibC
-      MAP_ANON = 0x20
+      MAP_ANON   = 0x20
+      MAP_FIXED  = 0x10
+      MAP_FAILED = Pointer(Void).null
     end
   {% end %}
 
-  {% if !LibC.has_constant?(:MAP_FAILED) %}
+  {% if !LibC.has_constant?(:MAP_FIXED) %}
     lib LibC
-      MAP_FAILED = Pointer(Void).null
+      MAP_FIXED = 0x10
+    end
+  {% end %}
+
+  {% if !LibC.has_constant?(:MAP_SHARED) %}
+    lib LibC
+      MAP_SHARED  = 0x01
+      MAP_PRIVATE = 0x02
     end
   {% end %}
 
