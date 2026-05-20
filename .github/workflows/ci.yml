@@ -36,13 +36,13 @@ jobs:
             brew install libsodium || true
             ;;
           windows-latest)
-            # libsodium via vcpkg (pre-installed on GitHub runners)
+            vcpkg install libsodium --triplet x64-windows
             ;;
         esac
 
     - name: Install shard dependencies
       env:
-        LIBSODIUM_INSTALL: "0"
+        LIBSODIUM_INSTALL: ${{ matrix.os == 'windows-latest' && '1' || '0' }}
       run: shards install
 
     - name: Cache shards
@@ -62,11 +62,24 @@ jobs:
     - name: Build binary
       run: shards build --release
 
+    - name: Determine binary name
+      id: bin-name
+      shell: bash
+      run: |
+        case "${{ matrix.os }}" in
+          windows-latest)
+            echo "name=keyring_cr.exe" >> $GITHUB_OUTPUT
+            ;;
+          *)
+            echo "name=keyring_cr" >> $GITHUB_OUTPUT
+            ;;
+        esac
+
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
         name: keyring_cr-${{ matrix.os }}
-        path: bin/keyring_cr${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+        path: bin/${{ steps.bin-name.outputs.name }}
         retention-days: 7
 
   lint:
@@ -157,22 +170,36 @@ jobs:
             brew install libsodium || true
             ;;
           windows-latest)
+            vcpkg install libsodium --triplet x64-windows
             ;;
         esac
 
     - name: Install shard dependencies
       env:
-        LIBSODIUM_INSTALL: "0"
+        LIBSODIUM_INSTALL: ${{ matrix.os == 'windows-latest' && '1' || '0' }}
       run: shards install
 
     - name: Build release binary
       run: shards build --release
 
+    - name: Determine binary name
+      id: bin-name-release
+      shell: bash
+      run: |
+        case "${{ matrix.os }}" in
+          windows-latest)
+            echo "name=keyring_cr.exe" >> $GITHUB_OUTPUT
+            ;;
+          *)
+            echo "name=keyring_cr" >> $GITHUB_OUTPUT
+            ;;
+        esac
+
     - name: Upload binary artifact
       uses: actions/upload-artifact@v4
       with:
         name: keyring_cr-${{ matrix.os }}
-        path: bin/keyring_cr${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+        path: bin/${{ steps.bin-name-release.outputs.name }}
         retention-days: 30
 
   release:
