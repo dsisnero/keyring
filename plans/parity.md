@@ -28,19 +28,19 @@ Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 - [x] `FileBackend` — Crystal-specific encrypted JSON file storage
 - [ ] Backend plugin/registration system (`_load_plugins`, `get_all_keyring`) — upstream uses setuptools entry points; Crystal compile-time requires are a partial equivalent
 - [ ] `_detect_backend(limit)` — backend detection with caller-supplied filter
-- [ ] `load_keyring(keyring_name)` — load backend by fully-qualified name
-- [ ] `load_env()` — load backend from `PYTHON_KEYRING_BACKEND` env var (Crystal has `KEYRING_BACKEND` config env but not module import)
-- [ ] `load_config()` — load backend from keyringrc.cfg (Crystal config.yml has `preferred_backend` but not full dynamic loading)
-- [ ] `by_priority` / `_limit` — backend filtering and priority-based sorting helpers
-- [ ] `recommended(backend)` — check if backend priority >= 1
+- [x] `load_keyring(keyring_name)` — load backend by fully-qualified name
+- [x] `load_env()` — load backend from `PYTHON_KEYRING_BACKEND` env var (Crystal has `KEYRING_BACKEND` config env but not module import)
+- [x] `load_config()` — load backend from keyringrc.cfg (Crystal config.yml has `preferred_backend` but not full dynamic loading)
+- [x] `by_priority` / `_limit` — backend filtering and priority-based sorting helpers
+- [x] `recommended(backend)` — check if backend priority >= 1
 - [ ] `KeyringBackendMeta` metaclass — auto-registration, username validation wrapper
 
 ## Backend Features (upstream)
 
 - [x] `priority` class property — each backend declares a priority score
 - [x] `available?` class method — viability check (returns Bool, Crystal extension)
-- [ ] `viable` class property — upstream wraps priority in exception trap (Crystal uses `available?`)
-- [ ] `name` class property — display name derived from module/class (Crystal uses `class.name`)
+- [x] `viable` class property — upstream wraps priority in exception trap (Crystal uses `available?`)
+- [x] `name` class property — display name derived from module/class (Crystal uses `display_name`)
 - [x] `set_properties_from_env()` — set backend properties from `KEYRING_PROPERTY_*` env vars
 - [x] `with_properties(**kwargs)` — clone backend with overridden properties
 - [x] Backend health check — lightweight validation on init
@@ -66,7 +66,7 @@ Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 - [x] `--keyring-backend` flag — specify backend by name to use
 - [ ] `--print-completion` flag — print shell completion script (upstream uses shtab)
 - [ ] Dynamic backend completion (tab-complete available backend names for --keyring-backend)
-- [ ] Upstream get modes: `--mode creds` returns both username + password on separate lines
+- [x] `--mode creds` returns both username + password on separate lines
 
 ## Credentials
 
@@ -75,7 +75,7 @@ Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 - [x] `add_metadata(key, value)` / `remove_metadata(key)`
 - [x] `SchemeSelectable` — backend base class for alternate attribute schemes (KeePassXC)
 - [ ] `SimpleCredential` — upstream simple username+password credential (Crystal Credential covers both)
-- [ ] `AnonymousCredential` — username-less credential for get --mode creds
+- [x] `AnonymousCredential` — username-less credential for get --mode creds
 - [x] `EnvironCredential` — credentials sourced from environment variables
 
 ## Configuration
@@ -170,9 +170,9 @@ Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 
 ### Integration Tests
 - [x] End-to-end spec (basic flow)
-- [ ] Multi-backend integration (chainer, failover scenarios)
-- [ ] Config persistence round-trip
-- [ ] Export/import round-trip integrity
+- [x] Multi-backend integration (chainer, failover scenarios)
+- [x] Config persistence round-trip
+- [x] Export/import round-trip integrity
 
 ## Module-Level API (Keyring.keyring class-level)
 

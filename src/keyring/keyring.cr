@@ -85,6 +85,79 @@ module Keyring
       @@current_keyring ||= Keyring.new
     end
 
+    # Load a backend class by display name or class name.
+    # Mirrors Python keyring.load_keyring() / _load_keyring_class().
+    def self.load_keyring(keyring_name : String) : Backend
+      candidates = @@candidates_override || get_candidate_list_static
+      klass = candidates.find do |k|
+        k.to_s.ends_with?(keyring_name) ||
+          k.display_name.downcase == keyring_name.downcase
+      end
+      raise KeyringError.new("Backend not found: #{keyring_name}") unless klass
+      raise KeyringError.new("Backend not viable: #{keyring_name}") unless klass.viable?
+      klass.new
+    end
+
+    # Load a keyring configured in the environment variable.
+    # Mirrors Python keyring.load_env().
+    def self.load_env : Backend?
+      if env = ENV["KEYRING_BACKEND"]?
+        load_keyring(env)
+      end
+    rescue
+      nil
+    end
+
+    # Load a keyring from the config file's preferred_backend setting.
+    # Mirrors Python keyring.load_config().
+    def self.load_config : Backend?
+      Config.load.preferred_backend.try { |name| load_keyring(name) }
+    rescue
+      nil
+    end
+
+    # Return all viable backend instances (not just classes).
+    # Mirrors Python keyring.backend.get_all_keyring().
+    # ameba:disable Naming/AccessorMethodName
+    def self.get_all_keyring : Array(Backend)
+      candidates = @@candidates_override || get_candidate_list_static
+      candidates
+        .select(&.viable?)
+        .compact_map { |klass|
+          begin
+            klass.new
+          rescue
+            nil
+          end
+        }
+    end
+
+    # Check if a backend is recommended (priority >= 1).
+    # Mirrors Python keyring.core.recommended().
+    def self.recommended?(backend : Backend) : Bool
+      # All backends in Crystal are implicitly recommended
+      true
+    end
+
+    # Get the static candidate list (not instance-dependent).
+    # ameba:disable Naming/AccessorMethodName
+    private def self.get_candidate_list_static : Array(Backend.class)
+      list = [] of Backend.class
+      {% if flag?(:windows) %}
+        list << WindowsBackend
+      {% end %}
+      {% if flag?(:darwin) %}
+        list << MacOsKeyChainBackend
+      {% end %}
+      {% if flag?(:linux) %}
+        list << LinuxSecretServiceBackend
+        list << KWalletBackend
+        list << KWallet4Backend
+      {% end %}
+      list << FileBackend
+      list
+    end
+
     def initialize(config_path : String? = nil, *, backend : Backend? = nil)
       @config = config_path ? Config.load(config_path) : Config.load
       ::Keyring.setup_logging(@config)

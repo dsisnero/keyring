@@ -26,6 +26,22 @@ module Keyring
     abstract def get_credential(service : String, username : String) : Credential?
     abstract def list_credentials : Array(Credential)
 
+    def self.available? : Bool
+      raise NotImplementedError.new("#{self}.available? must be implemented")
+    end
+
+    def self.display_name : String
+      class_name = self.to_s
+      parts = class_name.split("::")
+      parts.last? ? parts.last.gsub(/([a-z])([A-Z])/, "\\1 \\2") : class_name
+    end
+
+    def self.viable? : Bool
+      available?
+    rescue
+      false
+    end
+
     @env_properties : Hash(String, String)?
 
     def env_properties : Hash(String, String)

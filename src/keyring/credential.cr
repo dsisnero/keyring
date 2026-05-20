@@ -84,4 +84,19 @@ module Keyring
       value
     end
   end
+
+  class AnonymousCredential
+    getter password : String
+
+    def initialize(@password : String)
+    end
+
+    def username : String
+      raise KeyringError.new("Anonymous credential has no username")
+    end
+
+    def to_h : Hash(String, String)
+      {"password" => @password}
+    end
+  end
 end

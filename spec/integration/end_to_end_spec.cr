@@ -393,4 +393,69 @@ describe "End-to-End Integration" do
       end
     end
   end
+
+  it "load_keyring: loads backend by name" do
+    backend = Keyring::Keyring.load_keyring("FileBackend")
+    backend.should be_a(Keyring::FileBackend)
+  end
+
+  it "load_keyring: raises for unknown backend name" do
+    expect_raises(Keyring::KeyringError, /not found/) do
+      Keyring::Keyring.load_keyring("NonExistentBackend")
+    end
+  end
+
+  it "load_env: loads backend from KEYRING_BACKEND env var" do
+    ENV["KEYRING_BACKEND"] = "FileBackend"
+    backend = Keyring::Keyring.load_env
+    backend.should_not be_nil
+    backend.should be_a(Keyring::FileBackend)
+  end
+
+  it "load_env: returns nil when env var not set" do
+    ENV.delete("KEYRING_BACKEND")
+    Keyring::Keyring.load_env.should be_nil
+  end
+
+  it "load_config: loads backend from config preferred_backend" do
+    with_temp_dir("keyring-discovery") do |dir|
+      config_dir = File.join(dir, "keyring_cr")
+      Dir.mkdir_p(config_dir)
+      config_path = File.join(config_dir, "config.yml")
+      File.write(config_path, <<-YAML
+        preferred_backend: FileBackend
+        encrypt_passwords: false
+        log_level: ERROR
+        YAML
+      )
+      ENV["XDG_CONFIG_HOME"] = dir
+      ENV["XDG_DATA_HOME"] = dir
+      Dir.mkdir_p(File.join(dir, "keyring_cr"))
+      backend = Keyring::Keyring.load_config
+      backend.should_not be_nil
+      backend.should be_a(Keyring::FileBackend)
+    end
+  end
+
+  it "get_all_keyring: returns only viable backends" do
+    backends = Keyring::Keyring.get_all_keyring
+    backends.should_not be_empty
+    backends.all? { |b| b.is_a?(Keyring::Backend) }.should be_true
+  end
+
+  it "display_name: each backend has a display-friendly name" do
+    Keyring::Keyring.get_all_keyring.each do |backend|
+      name = backend.class.display_name
+      name.should_not be_empty
+      name.should_not contain("::")
+    end
+  end
+
+  it "viable?: returns true for available backends" do
+    Keyring::FileBackend.viable?.should be_true
+  end
+
+  it "viable?: returns false for unviable" do
+    IntegrationTestFakes::FakeUnavailableBackend.viable?.should be_false
+  end
 end

@@ -167,4 +167,48 @@ module Keyring
       end
     end
   end
+
+  describe AnonymousCredential do
+    it "holds a password with no username" do
+      ac = AnonymousCredential.new("s3cret")
+      ac.password.should eq("s3cret")
+    end
+
+    it "raises when accessing username" do
+      ac = AnonymousCredential.new("pw")
+      expect_raises(KeyringError) { ac.username }
+    end
+
+    it "converts to hash" do
+      ac = AnonymousCredential.new("pw")
+      h = ac.to_h
+      h["password"].should eq("pw")
+      h.has_key?("username").should be_false
+    end
+  end
+
+  describe EnvironCredential do
+    it "reads username and password from environment" do
+      with_env("TEST_USER_ENV", "alice") do
+        with_env("TEST_PASS_ENV", "hunter2") do
+          ec = EnvironCredential.new("TEST_USER_ENV", "TEST_PASS_ENV")
+          ec.username.should eq("alice")
+          ec.password.should eq("hunter2")
+        end
+      end
+    end
+
+    it "raises when env var is missing" do
+      ec = EnvironCredential.new("MISSING_USER", "MISSING_PASS")
+      expect_raises(KeyringError) { ec.username }
+    end
+
+    it "supports equality comparison" do
+      a = EnvironCredential.new("A", "B")
+      b = EnvironCredential.new("A", "B")
+      c = EnvironCredential.new("A", "C")
+      a.should eq(b)
+      b.should_not eq(c)
+    end
+  end
 end
