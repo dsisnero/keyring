@@ -1,4 +1,3 @@
-require "./compat"
 require "sodium"
 require "base64"
 
