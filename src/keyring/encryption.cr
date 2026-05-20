@@ -2,6 +2,21 @@ require "sodium"
 require "base64"
 
 module Keyring
+  abstract class Crypter
+    abstract def encrypt(value : String) : String
+    abstract def decrypt(value : String) : String
+  end
+
+  class NullCrypter < Crypter
+    def encrypt(value : String) : String
+      value
+    end
+
+    def decrypt(value : String) : String
+      value
+    end
+  end
+
   class Encryption
     # Encryption constants
     KEY_LENGTH   = Sodium::SecretBox::KEY_SIZE

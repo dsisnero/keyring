@@ -1,21 +1,14 @@
 [global]
-end_of_line = "lf"
-charset = "utf-8"
-trim_trailing_whitespace = true
-insert_final_newline = true
-indent_style = "space"
-indent_size = 2
 
 exclude = [
-  "temp",
-  "vendor",
-  "lib",
-  "bin",
-  ".git",
+    ".git",
+    ".github",
+    "lib",
+    "temp",
+    "vendor",
+    "spec",
+    "CHANGELOG.md",
+    "LICENSE.md",
 ]
 
-[*.{cr, crystall}]
-indent_size = 2
-
-[*.{yml,yaml}]
-indent_size = 2
+respect-gitignore = true

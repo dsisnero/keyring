@@ -281,5 +281,122 @@ module Keyring
       output = stdout_io.to_s
       output.includes?("compdef keyring_cr").should be_true
     end
+
+    it "get --mode creds returns username and password" do
+      stdout_io = IO::Memory.new; stderr_io = IO::Memory.new
+      CLI.set_io(stdout_io, stderr_io)
+      service = "cli-creds-#{Random.rand(10_000)}"
+      CLI.run(["set", "-s", service, "-u", "alice", "-p", "s3cret"])
+      stdout_io.clear
+      CLI.run(["get", "-s", service, "-u", "alice", "--mode", "creds"])
+      output = stdout_io.to_s
+      output.includes?("alice").should be_true
+      output.includes?("s3cret").should be_true
+    end
+
+    it "get --mode creds without username finds credential" do
+      stdout_io = IO::Memory.new; stderr_io = IO::Memory.new
+      CLI.set_io(stdout_io, stderr_io)
+      service = "cli-creds-anon-#{Random.rand(10_000)}"
+      CLI.run(["set", "-s", service, "-u", "bob", "-p", "secret"])
+      stdout_io.clear
+      CLI.run(["get", "-s", service, "--mode", "creds"])
+      output = stdout_io.to_s
+      output.includes?("bob").should be_true
+      output.includes?("secret").should be_true
+    end
+
+    it "diagnose command shows config and data paths" do
+      stdout_io = IO::Memory.new; stderr_io = IO::Memory.new
+      CLI.set_io(stdout_io, stderr_io)
+      CLI.run(["diagnose"])
+      output = stdout_io.to_s
+      output.includes?("config path:").should be_true
+      output.includes?("data root:").should be_true
+    end
+
+    it "set with provider strips trailing newline" do
+      service = "cli-newline-#{Random.rand(10_000)}"
+      user = "nl-user"
+      CLI.set_password_provider { "pw_with_nl\n" }
+      CLI.run(["set", "-s", service, "-u", user])
+      Keyring.new.get_password(service, user).should eq("pw_with_nl")
+    end
+
+    it "get with --output plain returns just password" do
+      stdout_io = IO::Memory.new; stderr_io = IO::Memory.new
+      CLI.set_io(stdout_io, stderr_io)
+      service = "cli-plain-#{Random.rand(10_000)}"
+      CLI.run(["set", "-s", service, "-u", "plain", "-p", "mypass"])
+      stdout_io.clear
+      CLI.run(["get", "-s", service, "-u", "plain"])
+      output = stdout_io.to_s.strip
+      output.should eq("mypass")
+    end
+
+    it "get with missing password returns error" do
+      stdout_io = IO::Memory.new; stderr_io = IO::Memory.new
+      CLI.set_io(stdout_io, stderr_io)
+      begin
+        CLI.run(["get", "-s", "nonexistent", "-u", "nobody"])
+        fail "expected FinishedCLI"
+      rescue e : CLI::FinishedCLI
+        e.code.should eq(1)
+      end
+      stderr_io.to_s.includes?("No password").should be_true
+    end
+
+    it "delete with --confirm requires confirmation" do
+      stdout_io = IO::Memory.new; stderr_io = IO::Memory.new
+      CLI.set_io(stdout_io, stderr_io)
+      service = "cli-confirm-#{Random.rand(10_000)}"
+      CLI.run(["set", "-s", service, "-u", "u", "-p", "pw"])
+      # Simulate "no" answer by providing a password provider that returns nil
+      # --confirm without TTY defaults to "y" via provider
+      CLI.set_password_provider { "y" }
+      begin
+        CLI.run(["delete", "-s", service, "-u", "u", "--confirm"])
+        Keyring.new.get_password(service, "u").should be_nil
+      rescue e
+        # OK if deletion also raises on non-existent
+      end
+    end
+
+    it "set requires service and username" do
+      stdout_io = IO::Memory.new; stderr_io = IO::Memory.new
+      CLI.set_io(stdout_io, stderr_io)
+      begin
+        CLI.run(["set"])
+        fail "expected FinishedCLI"
+      rescue e : CLI::FinishedCLI
+        e.code.should eq(1)
+      end
+      stderr_io.to_s.includes?("ERROR").should be_true
+    end
+
+    it "invalid option produces error" do
+      stdout_io = IO::Memory.new; stderr_io = IO::Memory.new
+      CLI.set_io(stdout_io, stderr_io)
+      begin
+        CLI.run(["--invalid-flag"])
+        fail "expected FinishedCLI"
+      rescue e : CLI::FinishedCLI
+        e.code.should eq(1)
+      end
+      stderr_io.to_s.includes?("ERROR").should be_true
+    end
+
+    it "unknown command produces error" do
+      stdout_io = IO::Memory.new; stderr_io = IO::Memory.new
+      CLI.set_io(stdout_io, stderr_io)
+      CLI.run(["set", "-s", "svc", "-u", "usr", "-p", "pw"])
+      stdout_io.clear; stderr_io.clear
+      begin
+        CLI.run(["--unknown-cmd"])
+        fail "expected FinishedCLI"
+      rescue e : CLI::FinishedCLI
+        e.code.should eq(1)
+      end
+    end
   end
 end

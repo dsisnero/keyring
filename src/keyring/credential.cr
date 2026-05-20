@@ -62,4 +62,26 @@ module Keyring
             "created: #{@created_at}, modified: #{@modified_at})"
     end
   end
+
+  class EnvironCredential
+    getter user_env_var : String
+    getter pwd_env_var : String
+
+    def initialize(@user_env_var : String, @pwd_env_var : String)
+    end
+
+    def_equals @user_env_var, @pwd_env_var
+
+    def username : String
+      value = ENV[@user_env_var]?
+      raise KeyringError.new("Missing environment variable: #{@user_env_var}") unless value
+      value
+    end
+
+    def password : String
+      value = ENV[@pwd_env_var]?
+      raise KeyringError.new("Missing environment variable: #{@pwd_env_var}") unless value
+      value
+    end
+  end
 end

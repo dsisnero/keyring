@@ -75,6 +75,7 @@ module Keyring
       confirm = false
       config_key = nil
       config_value = nil
+      get_mode = "password"
 
       parser = OptionParser.new do |opts|
         opts.banner = "Usage: keyring_cr [command] [options]"
@@ -91,6 +92,7 @@ module Keyring
         opts.on("backend", "Manage backends") { command = "backend" }
         opts.on("generate-key", "Generate an encryption key") { command = "generate-key" }
         opts.on("completion", "Generate shell completion script") { command = "completion" }
+        opts.on("diagnose", "Show diagnostic information") { command = "diagnose" }
 
         opts.on("-s NAME", "--service=NAME", "Service name") { |service_name| service = service_name }
         opts.on("-u USER", "--username=USER", "Username") { |user| username = user }
@@ -100,6 +102,7 @@ module Keyring
         opts.on("-q QUERY", "--query=QUERY", "Search query") { |search_query| query = search_query }
         opts.on("-f FILE", "--file=FILE", "Import/export file path") { |file_path| export_path = import_path = file_path }
         opts.on("--output=FORMAT", "Output format: plain or json") { |format| output_format = format }
+        opts.on("--mode=MODE", "Get mode: password or creds") { |mode| get_mode = mode }
         opts.on("--verbose", "Enable verbose logging") { verbose = true }
         opts.on("--quiet", "Suppress non-error output") { quiet = true }
         opts.on("--confirm", "Require confirmation for destructive operations") { confirm = true }
@@ -140,18 +143,35 @@ module Keyring
 
         case command
         when "get"
-          check_required_args(service: service, username: username)
-          s = service.as(String)
-          u = username.as(String)
-          if found_password = keyring.get_password(s, u)
-            if output_format == "json"
-              out_puts({"service" => s, "username" => u, "password" => found_password}.to_json)
+          if get_mode == "creds"
+            check_required_args(service: service)
+            s = service.as(String)
+            u = username
+            if cred = keyring.get_credential(s, u || "")
+              if output_format == "json"
+                out_puts({"service" => s, "username" => cred.username, "password" => cred.password}.to_json)
+              else
+                out_puts cred.username
+                out_puts cred.password
+              end
             else
-              out_puts found_password
+              err_puts "No credential found for #{s}".colorize(:red)
+              terminate(1)
             end
           else
-            err_puts "No password found for #{s}:#{u}".colorize(:red)
-            terminate(1)
+            check_required_args(service: service, username: username)
+            s = service.as(String)
+            u = username.as(String)
+            if found_password = keyring.get_password(s, u)
+              if output_format == "json"
+                out_puts({"service" => s, "username" => u, "password" => found_password}.to_json)
+              else
+                out_puts found_password
+              end
+            else
+              err_puts "No password found for #{s}:#{u}".colorize(:red)
+              terminate(1)
+            end
           end
         when "set"
           check_required_args(service: service, username: username)
@@ -186,8 +206,8 @@ module Keyring
             out_puts "No credentials found".colorize(:yellow)
           else
             out_puts "Credentials:".colorize(:cyan)
-            creds.each do |cred|
-              out_puts "  #{cred.service} - #{cred.username}".colorize(:white)
+            creds.each do |entry|
+              out_puts "  #{entry.service} - #{entry.username}".colorize(:white)
             end
           end
         when "search"
@@ -200,8 +220,8 @@ module Keyring
             out_puts "No matching credentials found".colorize(:yellow)
           else
             out_puts "Search results:".colorize(:cyan)
-            results.each do |cred|
-              out_puts "  #{cred.service} - #{cred.username}".colorize(:white)
+            results.each do |result|
+              out_puts "  #{result.service} - #{result.username}".colorize(:white)
             end
           end
         when "export"
@@ -287,6 +307,15 @@ module Keyring
         when "completion"
           shell = args[0]? || "bash"
           out_puts generate_completion(shell)
+        when "diagnose"
+          root = Platform.config_root
+          path = root + "/config.yml"
+          if File.exists?(path)
+            out_puts "config path: #{path}"
+          else
+            out_puts "config path: #{path} (absent)"
+          end
+          out_puts "data root: #{Platform.data_root}"
         else
           err_puts "ERROR: No command specified".colorize(:red)
           err_puts parser
@@ -305,17 +334,24 @@ module Keyring
     private def self.resolve_password(password, password_stdin) : String?
       return password if password
 
-      if password_stdin
-        if provider = @@password_provider
-          return provider.call
-        end
-        return STDIN.gets.try(&.chomp)
-      end
+      result = if password_stdin
+                 if provider = @@password_provider
+                   provider.call
+                 else
+                   STDIN.gets
+                 end
+               else
+                 out_print "Enter password: "
+                 val = read_password
+                 out_puts ""
+                 val
+               end
+      strip_last_newline(result)
+    end
 
-      out_print "Enter password: "
-      pw = read_password
-      out_puts ""
-      pw
+    private def self.strip_last_newline(str : String?) : String?
+      return unless str
+      str.ends_with?('\n') ? str[0..-2] : str
     end
 
     private def self.check_required_args(**args)
@@ -334,7 +370,7 @@ module Keyring
 _keyring_cr_completion() {
   local cur prev words cword
   _init_completion || return
-  COMMANDS="get set update delete list search export import config backend generate-key"
+  COMMANDS="get set update delete list search export import config backend generate-key diagnose"
 
   case $prev in
     -s|--service) COMPREPLY=() ; return ;;
@@ -379,6 +415,7 @@ _keyring_cr() {
     'config:Manage configuration'
     'backend:Manage backends'
     'generate-key:Generate an encryption key'
+    'diagnose:Show diagnostic information'
     'completion:Generate shell completion script'
   )
   _describe -t commands 'keyring_cr commands' commands

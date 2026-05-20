@@ -142,8 +142,13 @@ module Keyring
       raise KeyringError.new("Username cannot be empty") if username.empty?
     end
 
-    def get_credential(service : String, username : String) : Credential?
-      with_operation("get_credential") { |backend| backend.get_credential(service, username) }
+    def get_credential(service : String, username : String? = nil) : Credential?
+      if username.nil? || username.empty?
+        creds = list_credentials
+        creds.find { |cred| cred.service == service }
+      else
+        with_operation("get_credential") { |backend| backend.get_credential(service, username) }
+      end
     end
 
     def list_credentials : Array(Credential)
@@ -419,5 +424,17 @@ module Keyring
     private def setup_logging
       Keyring.setup_logging(@config)
     end
+  end
+
+  def self.disable
+    root = Platform.config_root
+    Dir.mkdir_p(root)
+    config_path = File.join(root, "config.yml")
+    if File.exists?(config_path)
+      raise KeyringError.new("Refusing to overwrite #{config_path}")
+    end
+    File.write(config_path, <<-YAML)
+preferred_backend: NullBackend
+YAML
   end
 end

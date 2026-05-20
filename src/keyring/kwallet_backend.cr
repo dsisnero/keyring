@@ -57,18 +57,22 @@ module Keyring
     end
 
     def get_password(service : String, username : String) : String?
-      ensure_connected!(service)
+      connected_or_raise!
       return nil unless has_entry?(service, username)
       read_password(service, username)
     end
 
     def set_password(service : String, username : String, password : String)
-      ensure_connected!(service)
+      unless connected?
+        raise PasswordSetError.new("Cancelled by user")
+      end
       write_password(service, username, password)
     end
 
     def delete_password(service : String, username : String)
-      ensure_connected!(service)
+      unless connected?
+        raise PasswordDeleteError.new("Cancelled by user")
+      end
       unless has_entry?(service, username)
         raise PasswordDeleteError.new("Password not found: #{service}:#{username}")
       end
@@ -76,7 +80,7 @@ module Keyring
     end
 
     def get_credential(service : String, username : String) : Credential?
-      ensure_connected!(service)
+      connected_or_raise!
       entries = entry_list(service)
       if entries.includes?(username)
         password = read_password(service, username)
@@ -89,6 +93,33 @@ module Keyring
       # KWallet doesn't have a native list-all; iterate common services
       # This is a simplified implementation
       [] of Credential
+    end
+
+    private def connected?
+      @connected && @handle >= 0 && open?
+    end
+
+    private def open? : Bool
+      result = qdbus(@bus_name, @object_path, IFACE, "isOpen", @handle.to_s)
+      result.strip == "true"
+    rescue
+      false
+    end
+
+    private def connected_or_raise!
+      connect_if_needed
+      raise KeyringLocked.new("Failed to unlock the keyring!") unless connected?
+    end
+
+    private def connect_if_needed
+      return if connected?
+      begin
+        wallet = network_wallet
+        @handle = open(wallet)
+        @connected = @handle >= 0
+      rescue
+        @connected = false
+      end
     end
 
     private def ensure_connected!(service : String)

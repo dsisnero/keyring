@@ -27,6 +27,9 @@ logs/
 coverage/
 .coveralls.yml
 
+# Temporary working artifacts
+temp/
+
 # Temporary files
 /tmp/
 *.tmp

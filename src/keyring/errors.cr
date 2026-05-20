@@ -13,6 +13,8 @@ module Keyring
 
   class KeyringError < Error; end
 
+  class KeyringLocked < Error; end
+
   class EncryptionError < Error; end
 
   class ConfigError < Error; end
