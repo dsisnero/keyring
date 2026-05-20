@@ -48,7 +48,15 @@ jobs:
       shell: bash
       env:
         LIBSODIUM_INSTALL: "0"
-      run: shards install
+      run: |
+        case "${{ matrix.os }}" in
+          windows-latest)
+            shards install --skip-postinstall
+            ;;
+          *)
+            shards install
+            ;;
+        esac
 
     - name: Cache shards
       uses: actions/cache@v4
@@ -100,7 +108,7 @@ jobs:
     - name: Install system libraries
       run: |
         sudo apt-get update
-        sudo apt-get install -y libsodium-dev libsecret-1-dev libglib2.0-dev libgobject-2.0-dev
+        sudo apt-get install -y libsodium-dev libsecret-1-dev libglib2.0-dev
         gcc -c -fPIC src/keyring/schema_shim.c -o src/keyring/schema_shim.o $(pkg-config --cflags libsecret-1)
 
     - name: Install shard dependencies
@@ -156,7 +164,15 @@ jobs:
       shell: bash
       env:
         LIBSODIUM_INSTALL: "0"
-      run: shards install
+      run: |
+        case "${{ matrix.os }}" in
+          windows-latest)
+            shards install --skip-postinstall
+            ;;
+          *)
+            shards install
+            ;;
+        esac
 
     - name: Build release binary
       run: shards build --release
