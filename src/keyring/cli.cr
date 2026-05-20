@@ -82,20 +82,23 @@ module Keyring
 
       parser = OptionParser.new do |opts|
         opts.banner = "Usage: keyring_cr [command] [options]"
-
-        opts.on("get", "Get a password") { command = "get" }
-        opts.on("set", "Set a password") { command = "set" }
-        opts.on("update", "Update a password") { command = "update" }
-        opts.on("delete", "Delete a password") { command = "delete" }
-        opts.on("list", "List all credentials") { command = "list" }
-        opts.on("search", "Search credentials") { command = "search" }
-        opts.on("export", "Export credentials") { command = "export" }
-        opts.on("import", "Import credentials") { command = "import" }
-        opts.on("config", "Manage configuration") { command = "config" }
-        opts.on("backend", "Manage backends") { command = "backend" }
-        opts.on("generate-key", "Generate an encryption key") { command = "generate-key" }
-        opts.on("completion", "Generate shell completion script") { command = "completion" }
-        opts.on("diagnose", "Show diagnostic information") { command = "diagnose" }
+        opts.separator ""
+        opts.separator "Commands:"
+        opts.separator "  get           Get a password"
+        opts.separator "  set           Set a password"
+        opts.separator "  update        Update a password"
+        opts.separator "  delete        Delete a password"
+        opts.separator "  list          List all credentials"
+        opts.separator "  search        Search credentials"
+        opts.separator "  export        Export credentials"
+        opts.separator "  import        Import credentials"
+        opts.separator "  config        Manage configuration"
+        opts.separator "  backend       Manage backends"
+        opts.separator "  generate-key  Generate an encryption key"
+        opts.separator "  completion    Generate shell completion script"
+        opts.separator "  diagnose      Show diagnostic information"
+        opts.separator ""
+        opts.separator "Options:"
 
         opts.on("-s NAME", "--service=NAME", "Service name") { |service_name| service = service_name }
         opts.on("-u USER", "--username=USER", "Username") { |user| username = user }
@@ -122,16 +125,16 @@ module Keyring
           out_puts "Keyring version #{VERSION}"
           terminate(0)
         end
-
-        opts.invalid_option do |flag|
-          err_puts "ERROR: #{flag} is not a valid option."
-          err_puts opts
-          terminate(1)
-        end
       end
 
       begin
         parser.parse(args)
+
+        # Extract command from first positional argument (parse modifies args in-place)
+        command = args.empty? ? nil : args.shift
+
+        # Save remaining positional sub-args for commands that need them
+        sub_args = args
 
         # Handle standalone flags (no command needed)
         if list_backends_flag
@@ -144,8 +147,8 @@ module Keyring
           terminate(0)
         end
 
-        # If no command and no args, show help and exit 0
-        if args.empty? && command.nil?
+        # If no command, show help and exit 0
+        if command.nil?
           out_puts parser
           terminate(0)
         end
@@ -259,7 +262,7 @@ module Keyring
           keyring.import_credentials(f)
           out_puts "Credentials imported from #{f}".colorize(:green) unless quiet
         when "config"
-          sub_action = args[0]? || "show"
+          sub_action = sub_args[0]? || "show"
           case sub_action
           when "show"
             cfg = keyring.config
@@ -296,7 +299,7 @@ module Keyring
             terminate(1)
           end
         when "backend"
-          sub_action = args[0]? || "list"
+          sub_action = sub_args[0]? || "list"
           case sub_action
           when "list"
             backends = keyring.list_available_backends
@@ -313,7 +316,7 @@ module Keyring
               end
             end
           when "switch"
-            target = args[1]?
+            target = sub_args[1]?
             unless target
               err_puts "ERROR: backend name required".colorize(:red)
               terminate(1)
@@ -329,7 +332,7 @@ module Keyring
           key = Encryption.generate_key
           out_puts key
         when "completion"
-          shell = args[0]? || "bash"
+          shell = sub_args[0]? || "bash"
           out_puts generate_completion(shell)
         when "diagnose"
           root = Platform.config_root
@@ -453,4 +456,4 @@ ZSH
   end
 end
 
-Keyring::CLI.run if PROGRAM_NAME == "keyring_cr"
+Keyring::CLI.run if PROGRAM_NAME.ends_with?("keyring_cr")
