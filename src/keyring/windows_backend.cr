@@ -34,7 +34,7 @@ module Keyring
     def get_password(service : String, username : String) : String?
       {% if flag?(:windows) %}
         target = "#{service}:#{username}"
-        win_target = target.to_utf16
+        win_target = target.to_utf16.to_unsafe
         credential_ptr = Pointer(LibWin32::CREDENTIALW).null
         ret = LibWin32.cred_read_w(win_target, CRED_TYPE_GENERIC, 0_u32, pointerof(credential_ptr))
         if ret != 0
@@ -81,8 +81,8 @@ module Keyring
       # Prepare credential structure
       credential = LibWin32::CREDENTIALW.new
       credential.type__ = CRED_TYPE_GENERIC
-      credential.target_name = target.to_utf16
-      credential.user_name = username.to_utf16
+      credential.target_name = target.to_utf16.to_unsafe
+      credential.user_name = username.to_utf16.to_unsafe
 
       # Convert password to slice
       password_slice = password.to_slice
@@ -95,7 +95,7 @@ module Keyring
 
       # Preserve existing comment (metadata)
       if existing_comment
-        credential.comment = existing_comment.to_utf16
+        credential.comment = existing_comment.to_utf16.to_unsafe
       end
 
       # Write credential
@@ -127,7 +127,7 @@ module Keyring
       target = "#{service}:#{username}"
 
       if LibWin32.cred_delete_w(
-           target.to_utf16,
+           target.to_utf16.to_unsafe,
            CRED_TYPE_GENERIC,
            0_u32
          ) == 0
@@ -156,7 +156,7 @@ module Keyring
     def set_metadata(service : String, username : String, key : String, value : String)
       {% if flag?(:windows) %}
         target = "#{service}:#{username}"
-        win_target = target.to_utf16
+        win_target = target.to_utf16.to_unsafe
         credential_ptr = Pointer(LibWin32::CREDENTIALW).null
         ret = LibWin32.cred_read_w(win_target, CRED_TYPE_GENERIC, 0_u32, pointerof(credential_ptr))
         if ret == 0
@@ -185,14 +185,14 @@ module Keyring
           updated = LibWin32::CREDENTIALW.new
           updated.type__ = CRED_TYPE_GENERIC
           updated.target_name = win_target
-          updated.user_name = username.to_utf16
+          updated.user_name = username.to_utf16.to_unsafe
           updated.credential_blob = credential.credential_blob
           updated.credential_blob_size = credential.credential_blob_size
           updated.persist = credential.persist
 
           # Set comment with JSON metadata
           comment_json = metadata.to_json
-          updated.comment = comment_json.to_utf16
+          updated.comment = comment_json.to_utf16.to_unsafe
 
           if LibWin32.cred_write_w(pointerof(updated), 0_u32) == 0
             error_code = LibC.GetLastError
