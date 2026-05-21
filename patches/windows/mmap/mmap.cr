@@ -63,5 +63,13 @@ module Mmap
     def [](idx : Int, size : Int) : SubRegion
       SubRegion.new(parent: self, offset: @offset + idx, size: size)
     end
+
+    def to_slice : Bytes
+      Bytes.new(@size)
+    end
+
+    def to_unsafe : UInt8*
+      Pointer(UInt8).null
+    end
   end
 end
