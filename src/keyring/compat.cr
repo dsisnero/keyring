@@ -16,16 +16,16 @@
     alias CRED_PERSIST = Win32cr::Security::Credentials::CRED_PERSIST
     alias FILETIME = Win32cr::Foundation::FILETIME
 
-    def self.cred_read_w(target_name : Win32cr::Foundation::PWSTR, type__ : UInt32, flags : UInt32, credential : Win32cr::Security::Credentials::CREDENTIALW**) : Win32cr::Foundation::BOOL
-      Win32cr::Security::Credentials.credReadW(target_name, type__, flags, credential)
+    def self.cred_read_w(target_name : Win32cr::Foundation::PWSTR, type__ : Win32cr::Security::Credentials::CRED_TYPE, flags : UInt32, credential : Win32cr::Security::Credentials::CREDENTIALW**) : Win32cr::Foundation::BOOL
+      Win32cr::Security::Credentials.credReadW(target_name, type__.value, flags, credential)
     end
 
     def self.cred_write_w(credential : Win32cr::Security::Credentials::CREDENTIALW*, flags : UInt32) : Win32cr::Foundation::BOOL
       Win32cr::Security::Credentials.credWriteW(credential, flags)
     end
 
-    def self.cred_delete_w(target_name : Win32cr::Foundation::PWSTR, type__ : UInt32, flags : UInt32) : Win32cr::Foundation::BOOL
-      Win32cr::Security::Credentials.credDeleteW(target_name, type__, flags)
+    def self.cred_delete_w(target_name : Win32cr::Foundation::PWSTR, type__ : Win32cr::Security::Credentials::CRED_TYPE, flags : UInt32) : Win32cr::Foundation::BOOL
+      Win32cr::Security::Credentials.credDeleteW(target_name, type__.value, flags)
     end
 
     def self.cred_enumerate_w(filter : Win32cr::Foundation::PWSTR?, flags : UInt32, count : UInt32*, credential : Win32cr::Security::Credentials::CREDENTIALW***) : Win32cr::Foundation::BOOL
