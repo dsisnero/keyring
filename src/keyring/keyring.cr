@@ -3,8 +3,6 @@ require "./config"
 require "./credential"
 require "./encryption"
 require "./errors"
-require "./fail_backend"
-require "./file_backend"
 require "./logging"
 require "./metrics"
 require "./retryable"
@@ -22,6 +20,9 @@ require "./circuit_breaker"
 {% if flag?(:windows) %}
   require "./windows_backend"
 {% end %}
+
+require "./file_backend"
+require "./fail_backend"
 
 module Keyring
   VERSION = "0.1.0"
