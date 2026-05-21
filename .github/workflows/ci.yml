@@ -72,7 +72,14 @@ jobs:
       run: crystal spec spec/keyring/backend_contract_spec.cr spec/keyring/chainer_backend_spec.cr spec/keyring/circuit_breaker_spec.cr spec/keyring/cli_spec.cr spec/keyring/config_spec.cr spec/keyring/credential_spec.cr spec/keyring/encryption_spec.cr spec/keyring/file_backend_spec.cr spec/keyring/metrics_spec.cr spec/keyring/null_fail_backend_spec.cr spec/keyring/platform_spec.cr spec/keyring/reliability_spec.cr spec/keyring/retryable_spec.cr spec/keyring/backend_priority_spec.cr spec/keyring/backend_metadata_spec.cr spec/integration/end_to_end_spec.cr
 
     - name: Build binary
-      run: shards build --release
+      shell: bash
+      run: |
+        case "${{ matrix.os }}" in
+          windows-latest)
+            export LIB="$LIB;${{ github.workspace }}/vcpkg_installed/x64-windows/lib"
+            ;;
+        esac
+        shards build --release
 
     - name: Determine binary name
       id: bin-name
@@ -178,7 +185,14 @@ jobs:
         esac
 
     - name: Build release binary
-      run: shards build --release
+      shell: bash
+      run: |
+        case "${{ matrix.os }}" in
+          windows-latest)
+            export LIB="$LIB;${{ github.workspace }}/vcpkg_installed/x64-windows/lib"
+            ;;
+        esac
+        shards build --release
 
     - name: Determine binary name
       id: bin-name-rel
