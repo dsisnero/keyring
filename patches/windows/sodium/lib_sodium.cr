@@ -9,7 +9,11 @@ macro delegate_to_slice(to object)
 end
 
 module Sodium
-  @[Link(ldflags: "`#{__DIR__}/../../build/pkg-libs#{% if flag?(:windows) %}.bat#{% else %}.sh#{% end %} #{__DIR__}/../..`")]
+{% if flag?(:windows) %}
+  @[Link(ldflags: "`#{__DIR__}/../../build/pkg-libs.bat #{__DIR__}/../..`")]
+{% else %}
+  @[Link(ldflags: "`#{__DIR__}/../../build/pkg-libs.sh #{__DIR__}/../..`")]
+{% end %}
   lib LibSodium
     fun sodium_init : LibC::Int
 
