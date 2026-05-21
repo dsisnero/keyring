@@ -168,7 +168,7 @@ module Keyring
           # Parse existing metadata from comment field
           metadata = {} of String => String
           if !credential.comment.null?
-            comment_str = String.new(credential.comment)
+            comment_str = String.from_utf16(credential.comment).first
             if !comment_str.empty?
               begin
                 metadata = Hash(String, String).from_json(comment_str)
@@ -294,7 +294,7 @@ module Keyring
 
     # Extract target name and split into service and username
     private def parse_target_name(cred : LibWin32::CREDENTIALW) : {String, String}?
-      target = String.new(cred.target_name)
+      target = String.from_utf16(cred.target_name).first
 
       # Match the expected format of "service:username"
       if target =~ /^(.+):(.+)$/
@@ -359,7 +359,7 @@ module Keyring
       metadata = {} of String => String
       return metadata unless cred.comment
 
-      comment_str = String.new(cred.comment)
+      comment_str = String.from_utf16(cred.comment).first
       return metadata if comment_str.empty?
 
       begin
@@ -379,7 +379,7 @@ module Keyring
       begin
         cred = credential_ptr.value
         return if cred.comment.null?
-        String.new(cred.comment)
+        String.from_utf16(cred.comment).first
       ensure
         LibWin32.cred_free(credential_ptr) unless credential_ptr.null?
       end
