@@ -80,7 +80,7 @@ module Keyring
 
       # Prepare credential structure
       credential = LibWin32::CREDENTIALW.new
-      credential.type = CRED_TYPE_GENERIC
+      credential.type__ = CRED_TYPE_GENERIC
       credential.target_name = target.to_utf16
       credential.user_name = username.to_utf16
 
@@ -183,7 +183,7 @@ module Keyring
 
           # Create updated credential with new comment
           updated = LibWin32::CREDENTIALW.new
-          updated.type = CRED_TYPE_GENERIC
+          updated.type__ = CRED_TYPE_GENERIC
           updated.target_name = win_target
           updated.user_name = username.to_utf16
           updated.credential_blob = credential.credential_blob
@@ -265,7 +265,7 @@ module Keyring
 
     # Validate credential type
     private def valid_credential_type?(cred : LibWin32::CREDENTIALW) : Bool
-      SUPPORTED_CREDENTIAL_TYPES.includes?(cred.type)
+      SUPPORTED_CREDENTIAL_TYPES.includes?(cred.type__)
     end
 
     # Parse a single credential
@@ -345,7 +345,7 @@ module Keyring
     )
       metadata_mappings = {
         "persist_type"    => win_cred.persist.to_s,
-        "credential_type" => win_cred.type.to_s,
+        "credential_type" => win_cred.type__.to_s,
         "last_written"    => format_file_time(win_cred.last_written),
       }
 
