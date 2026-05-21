@@ -28,8 +28,8 @@
       Win32cr::Security::Credentials.credDeleteW(target_name, type__, flags)
     end
 
-    def self.cred_enumerate_w(filter : Win32cr::Foundation::PWSTR, flags : Win32cr::Security::Credentials::CRED_ENUMERATE_FLAGS, count : UInt32*, credential : Win32cr::Security::Credentials::CREDENTIALW***) : Win32cr::Foundation::BOOL
-      Win32cr::Security::Credentials.credEnumerateW(filter, flags, count, credential)
+    def self.cred_enumerate_w(filter : Win32cr::Foundation::PWSTR?, flags : Win32cr::Security::Credentials::CRED_ENUMERATE_FLAGS, count : UInt32*, credential : Win32cr::Security::Credentials::CREDENTIALW***) : Win32cr::Foundation::BOOL
+      Win32cr::Security::Credentials.credEnumerateW(filter || Pointer(UInt16).null, flags, count, credential)
     end
 
     def self.cred_free(buffer : Void*) : Void
