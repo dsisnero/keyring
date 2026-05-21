@@ -32,8 +32,8 @@
       Win32cr::Security::Credentials.credEnumerateW(filter || Pointer(UInt16).null, Win32cr::Security::Credentials::CRED_ENUMERATE_FLAGS.new(flags), count, credential)
     end
 
-    def self.cred_free(buffer : Void*) : Void
-      Win32cr::Security::Credentials.credFree(buffer)
+    def self.cred_free(buffer) : Void
+      Win32cr::Security::Credentials.credFree(buffer.as(Void*))
     end
   end
 {% end %}
