@@ -108,7 +108,7 @@ module Keyring
       end
     rescue ex
       Log.error { "Password set failed: #{ex.message}" }
-      raise
+      raise ex
     end
 
     # def delete_password(service : String, username : String)
@@ -138,7 +138,7 @@ module Keyring
       end
     rescue ex
       Log.error { "Password deletion failed: #{ex.message}" }
-      raise
+      raise ex
     end
 
     def get_credential(service : String, username : String) : Credential?
