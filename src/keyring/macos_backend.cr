@@ -133,6 +133,7 @@ require "./errors"
 
 module Keyring
   class MacOsKeyChainBackend < Backend
+    Backend.register(self)
     KEYCHAIN_NAME = "keyring"
 
     def supports_metadata? : Bool

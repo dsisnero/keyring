@@ -5,6 +5,7 @@ Excluded:
   - temp/**/*
   - lib/**/*
   - vendor/**/*
+  - patches/**/*
   - spec/**/*
   - test_list_credentials.cr
   - test_list_simple.cr

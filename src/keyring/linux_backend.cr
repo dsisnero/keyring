@@ -128,6 +128,7 @@ require "./errors"
 
 module Keyring
   class LinuxSecretServiceBackend < Backend
+    Backend.register(self)
     SCHEMA_NAME   = "org.keyring.crystal.Password"
     SERVICE_ATTR  = "service"
     USERNAME_ATTR = "username"

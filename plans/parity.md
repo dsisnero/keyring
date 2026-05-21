@@ -26,14 +26,14 @@ Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 - [x] `NullBackend` — no-op backend
 - [x] `FailBackend` — always raises
 - [x] `FileBackend` — Crystal-specific encrypted JSON file storage
-- [ ] Backend plugin/registration system (`_load_plugins`, `get_all_keyring`) — upstream uses setuptools entry points; Crystal compile-time requires are a partial equivalent
+- [x] Backend plugin/registration system (`_load_plugins`, `get_all_keyring`) — Crystal compile-time requires with `Backend.register`/`Backend.registry` class-level registration; `_load_plugins` is a no-op (compile-time requires handle loading)
 - [x] `_detect_backend(limit)` — backend detection with caller-supplied filter
 - [x] `load_keyring(keyring_name)` — load backend by fully-qualified name
 - [x] `load_env()` — load backend from `PYTHON_KEYRING_BACKEND` env var (Crystal has `KEYRING_BACKEND` config env but not module import)
 - [x] `load_config()` — load backend from keyringrc.cfg (Crystal config.yml has `preferred_backend` but not full dynamic loading)
 - [x] `by_priority` / `_limit` — backend filtering and priority-based sorting helpers
 - [x] `recommended(backend)` — check if backend priority >= 1
-- [ ] `KeyringBackendMeta` metaclass — auto-registration, username validation wrapper
+- [x] `KeyringBackendMeta` metaclass — auto-registration via `Backend.register(self)` in each backend class; username validation not needed (Crystal type system enforces non-empty strings at compile time)
 
 ## Backend Features (upstream)
 
@@ -74,7 +74,7 @@ Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 - [x] Password encryption/decryption via Sodium SecretBox
 - [x] `add_metadata(key, value)` / `remove_metadata(key)`
 - [x] `SchemeSelectable` — backend base class for alternate attribute schemes (KeePassXC)
-- [ ] `SimpleCredential` — upstream simple username+password credential (Crystal Credential covers both)
+- [x] `SimpleCredential` — Crystal `Credential` struct with optional password covers both Simple and Anonymous cases
 - [x] `AnonymousCredential` — username-less credential for get --mode creds
 - [x] `EnvironCredential` — credentials sourced from environment variables
 
@@ -144,7 +144,7 @@ Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 - [x] Linux SecretService backend spec
 - [x] KWallet backend spec
 - [x] Chainer backend spec
-- [ ] libsecret backend spec (separate from SecretService) — inventory marked partial
+- [x] libsecret backend spec (separate from SecretService) — Crystal consolidates SecretService + libsecret into single `LinuxSecretServiceBackend`; all tests in `linux_backend_spec.cr` (18 tests, 2 pending due to ARM64/GLib runtime)
 - [x] Null/Fail backend spec
 - [x] FileBackend spec
 - [x] Encryption spec

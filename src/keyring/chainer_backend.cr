@@ -9,6 +9,7 @@ module Keyring
   #
   # Ported from: python-keyring keyring/backends/chainer.py (v25.7.0)
   class ChainerBackend < Backend
+    Backend.register(self)
     getter backends : Array(Backend)
 
     def self.available? : Bool

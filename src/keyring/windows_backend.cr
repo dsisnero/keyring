@@ -16,6 +16,7 @@ module Keyring
   end
 
   class WindowsBackend < Backend
+    Backend.register(self)
     # Constants for credential filtering
     private SUPPORTED_CREDENTIAL_TYPES = [
       LibWin32::CRED_TYPE::CRED_TYPE_GENERIC,

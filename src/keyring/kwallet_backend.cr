@@ -8,6 +8,7 @@ module Keyring
   #
   # Ported from: python-keyring keyring/backends/kwallet.py (v25.7.0)
   class KWalletBackend < Backend
+    Backend.register(self)
     BUS_NAME       = "org.kde.kwalletd5"
     BUS_NAME_V4    = "org.kde.kwalletd"
     OBJECT_PATH    = "/modules/kwalletd5"
@@ -255,6 +256,7 @@ module Keyring
   end
 
   class KWallet4Backend < KWalletBackend
+    Backend.register(self)
     BUS_NAME_V4 = "org.kde.kwalletd"
 
     def self.available? : Bool

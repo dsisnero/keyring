@@ -8,6 +8,7 @@ module Keyring
   #
   # Ported from: python-keyring keyring/backends/fail.py (v25.7.0)
   class FailBackend < Backend
+    Backend.register(self)
     getter error_message : String
 
     def self.available? : Bool

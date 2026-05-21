@@ -20,6 +20,26 @@ module Keyring
   end
 
   abstract class Backend
+    # Backend registry — mirrors Python KeyringBackendMeta._classes
+    @@registry = [] of Backend.class
+
+    # Register a backend class. Called by each backend on load.
+    # Deduplicates: registering the same class multiple times is safe.
+    def self.register(backend_class : Backend.class)
+      return if @@registry.includes?(backend_class)
+      @@registry << backend_class
+    end
+
+    # Return all registered backend classes in registration order.
+    def self.registry : Array(Backend.class)
+      @@registry
+    end
+
+    # Clear the registry (primarily for testing).
+    def self.clear_registry
+      @@registry = [] of Backend.class
+    end
+
     abstract def get_password(service : String, username : String) : String?
     abstract def set_password(service : String, username : String, password : String)
     abstract def delete_password(service : String, username : String)

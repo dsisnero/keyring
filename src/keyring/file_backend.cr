@@ -10,6 +10,7 @@ module Keyring
   # File-based backend that stores credentials in an encrypted JSON file
   # This serves as a fallback when platform-specific backends are unavailable
   class FileBackend < Backend
+    Backend.register(self)
     DEFAULT_FILENAME = "credentials.enc.json"
 
     getter storage_path : String

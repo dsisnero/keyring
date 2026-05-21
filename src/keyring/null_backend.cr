@@ -8,6 +8,8 @@ module Keyring
   #
   # Ported from: python-keyring keyring/backends/null.py (v25.7.0)
   class NullBackend < Backend
+    Backend.register(self)
+
     def self.available? : Bool
       true
     end

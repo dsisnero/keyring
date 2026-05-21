@@ -159,8 +159,18 @@ module Keyring
     end
 
     # Get the static candidate list (not instance-dependent).
+    # Uses the backend registry populated by Backend.register calls in each backend file.
     # ameba:disable Naming/AccessorMethodName
     private def self.get_candidate_list_static : Array(Backend.class)
+      if Backend.registry.empty?
+        build_default_candidates
+      else
+        Backend.registry
+      end
+    end
+
+    # Build the default candidate list (used as fallback if registry is empty).
+    private def self.build_default_candidates : Array(Backend.class)
       list = [] of Backend.class
       {% if flag?(:windows) %}
         list << WindowsBackend
@@ -175,6 +185,28 @@ module Keyring
       {% end %}
       list << FileBackend
       list
+    end
+
+    # Get platform-appropriate candidate list (used internally)
+    private def get_candidate_list : Array(Backend.class)
+      if Backend.registry.empty?
+        list = [] of Backend.class
+        {% if flag?(:windows) %}
+          list << WindowsBackend
+        {% end %}
+        {% if flag?(:darwin) %}
+          list << MacOsKeyChainBackend
+        {% end %}
+        {% if flag?(:linux) %}
+          list << LinuxSecretServiceBackend
+          list << KWalletBackend
+          list << KWallet4Backend
+        {% end %}
+        list << FileBackend
+        list
+      else
+        Backend.registry
+      end
     end
 
     def initialize(config_path : String? = nil, *, backend : Backend? = nil)
@@ -394,23 +426,7 @@ module Keyring
       new_backend
     end
 
-    # Get platform-appropriate candidate list (used internally)
-    private def get_candidate_list : Array(Backend.class)
-      list = [] of Backend.class
-      {% if flag?(:windows) %}
-        list << WindowsBackend
-      {% end %}
-      {% if flag?(:darwin) %}
-        list << MacOsKeyChainBackend
-      {% end %}
-      {% if flag?(:linux) %}
-        list << LinuxSecretServiceBackend
-        list << KWalletBackend
-        list << KWallet4Backend
-      {% end %}
-      list << FileBackend
-      list
-    end
+    # Backend limit filter (callable taking Backend.class, returning Bool)
 
     private def get_preferred_backend : Backend
       # 1) Construct candidate list for this platform (or test override)
