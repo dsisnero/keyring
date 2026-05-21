@@ -412,7 +412,7 @@ module Keyring
       timestamp = (file_time.dwHighDateTime.to_u64 << 32) | file_time.dwLowDateTime.to_u64
 
       # Convert to seconds
-      seconds = timestamp / 10_000_000
+      seconds = timestamp // 10_000_000
 
       (windows_epoch + Time::Span.new(seconds: seconds)).to_s
     end
