@@ -2,6 +2,7 @@ module Mmap
   PAGE_SIZE = 4096
 
   class Error < Exception; end
+
   class Closed < Error; end
 
   @[Flags]
@@ -16,18 +17,20 @@ module Mmap
   @[Flags]
   enum Flags
     Fixed     = 0x10
-    Huge      = 0
-    Huge_2mb  = 0
-    Huge_1gb  = 0
-    CryptoKey = 0
-    GuardPage = 0
+    Huge      =    0
+    Huge_2mb  =    0
+    Huge_1gb  =    0
+    CryptoKey =    0
+    GuardPage =    0
   end
 
   abstract class View
     getter? closed = false
 
     def readwrite; end
+
     def readonly; end
+
     def noaccess; end
 
     def guard_page : Nil
@@ -38,6 +41,7 @@ module Mmap
     end
 
     def mprotect(prot : Prot) : Nil; end
+
     def msync : Nil; end
   end
 

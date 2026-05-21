@@ -36,14 +36,14 @@ module Keyring
         target = "#{service}:#{username}"
         win_target = target.to_utf16
         credential_ptr = Pointer(LibWin32::CREDENTIALW).null
-        ret = LibWin32.CredReadW(win_target, CRED_TYPE_GENERIC, 0, pointerof(credential_ptr))
+        ret = LibWin32.cred_read_w(win_target, CRED_TYPE_GENERIC, 0, pointerof(credential_ptr))
         if ret != 0
           begin
             credential = credential_ptr.value
             # safely extract credential blob
             return String.new(credential.credential_blob.as(UInt8*), credential.credential_blob_size)
           ensure
-            LibWin32.CredFree(credential_ptr)
+            LibWin32.cred_free(credential_ptr)
           end
         end
       {% else %}
@@ -63,7 +63,7 @@ module Keyring
     #     credential.credential_blob_size = password.bytesize
     #     credential.persist = LibWin32::CRED_PERSIST::CRED_PERSIST_LOCAL_MACHINE
 
-    #     if LibWin32.CredWriteW(pointerof(credential), 0) == 0
+    #     if LibWin32.cred_write_w(pointerof(credential), 0) == 0
     #       raise PasswordSetError.new("Failed to store password")
     #     end
     #   {% else %}
@@ -99,7 +99,7 @@ module Keyring
       end
 
       # Write credential
-      if LibWin32.CredWriteW(pointerof(credential), 0_u32) == 0
+      if LibWin32.cred_write_w(pointerof(credential), 0_u32) == 0
         # Get Windows error code
         error_code = LibC.GetLastError
         raise PasswordSetError.new(
@@ -114,7 +114,7 @@ module Keyring
     # def delete_password(service : String, username : String)
     #   {% if flag?(:windows) %}
     #     target = "#{service}:#{username}"
-    #     if LibWin32.CredDeleteW(target.to_utf16, CRED_TYPE_GENERIC, 0) == 0
+    #     if LibWin32.cred_delete_w(target.to_utf16, CRED_TYPE_GENERIC, 0) == 0
     #       raise PasswordDeleteError.new("Failed to delete password")
     #     end
     #   {% else %}
@@ -126,7 +126,7 @@ module Keyring
     def delete_password(service : String, username : String)
       target = "#{service}:#{username}"
 
-      if LibWin32.CredDeleteW(
+      if LibWin32.cred_delete_w(
            target.to_utf16,
            CRED_TYPE_GENERIC,
            0_u32
@@ -158,7 +158,7 @@ module Keyring
         target = "#{service}:#{username}"
         win_target = target.to_utf16
         credential_ptr = Pointer(LibWin32::CREDENTIALW).null
-        ret = LibWin32.CredReadW(win_target, CRED_TYPE_GENERIC, 0, pointerof(credential_ptr))
+        ret = LibWin32.cred_read_w(win_target, CRED_TYPE_GENERIC, 0, pointerof(credential_ptr))
         if ret == 0
           raise KeyringError.new("Credential not found: #{service}:#{username}")
         end
@@ -194,12 +194,12 @@ module Keyring
           comment_json = metadata.to_json
           updated.comment = comment_json.to_utf16
 
-          if LibWin32.CredWriteW(pointerof(updated), 0_u32) == 0
+          if LibWin32.cred_write_w(pointerof(updated), 0_u32) == 0
             error_code = LibC.GetLastError
             raise KeyringError.new("Failed to update metadata. Error code: #{error_code}")
           end
         ensure
-          LibWin32.CredFree(credential_ptr) unless credential_ptr.null?
+          LibWin32.cred_free(credential_ptr) unless credential_ptr.null?
         end
       {% else %}
         raise NoBackendError.new("Windows backend not available")
@@ -235,7 +235,7 @@ module Keyring
       count_ptr : UInt32*,
       credentials_ptr_ptr : LibWin32::CREDENTIALW***,
     ) : Bool
-      LibWin32.CredEnumerateW(
+      LibWin32.cred_enumerate_w(
         nil,   # Enumerate all credentials
         0_u32, # Flags (0 means default)
         count_ptr,
@@ -260,7 +260,7 @@ module Keyring
       end
     ensure
       # Always free the credentials
-      LibWin32.CredFree(credentials_ptr) unless credentials_ptr.null?
+      LibWin32.cred_free(credentials_ptr) unless credentials_ptr.null?
     end
 
     # Validate credential type
@@ -374,14 +374,14 @@ module Keyring
     private def get_existing_comment(target : String) : String?
       win_target = target.to_utf16
       credential_ptr = Pointer(LibWin32::CREDENTIALW).null
-      ret = LibWin32.CredReadW(win_target, CRED_TYPE_GENERIC, 0, pointerof(credential_ptr))
+      ret = LibWin32.cred_read_w(win_target, CRED_TYPE_GENERIC, 0, pointerof(credential_ptr))
       return if ret == 0
       begin
         cred = credential_ptr.value
         return if cred.comment.null?
         String.new(cred.comment)
       ensure
-        LibWin32.CredFree(credential_ptr) unless credential_ptr.null?
+        LibWin32.cred_free(credential_ptr) unless credential_ptr.null?
       end
     end
 
@@ -390,14 +390,14 @@ module Keyring
       target = "#{service}:#{username}"
       win_target = target.to_utf16
       credential_ptr = Pointer(LibWin32::CREDENTIALW).null
-      ret = LibWin32.CredReadW(win_target, CRED_TYPE_GENERIC, 0, pointerof(credential_ptr))
+      ret = LibWin32.cred_read_w(win_target, CRED_TYPE_GENERIC, 0, pointerof(credential_ptr))
       return if ret == 0
       begin
         cred = credential_ptr.value
         password = String.new(cred.credential_blob.as(UInt8*), cred.credential_blob_size)
         build_credential(service: service, username: username, password: password, cred: cred)
       ensure
-        LibWin32.CredFree(credential_ptr) unless credential_ptr.null?
+        LibWin32.cred_free(credential_ptr) unless credential_ptr.null?
       end
     end
 

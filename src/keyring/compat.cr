@@ -16,24 +16,24 @@
     alias CRED_PERSIST = Win32cr::Security::Credentials::CRED_PERSIST
     alias FILETIME = Win32cr::Foundation::FILETIME
 
-    def self.CredReadW(target_name : Win32cr::Foundation::PWSTR, type__ : UInt32, flags : UInt32, credential : Win32cr::Security::Credentials::CREDENTIALW**) : Win32cr::Foundation::BOOL
-      C.CredReadW(target_name, type__, flags, credential)
+    def self.cred_read_w(target_name : Win32cr::Foundation::PWSTR, type__ : UInt32, flags : UInt32, credential : Win32cr::Security::Credentials::CREDENTIALW**) : Win32cr::Foundation::BOOL
+      Win32cr::Security::Credentials.credReadW(target_name, type__, flags, credential)
     end
 
-    def self.CredWriteW(credential : Win32cr::Security::Credentials::CREDENTIALW*, flags : UInt32) : Win32cr::Foundation::BOOL
-      C.CredWriteW(credential, flags)
+    def self.cred_write_w(credential : Win32cr::Security::Credentials::CREDENTIALW*, flags : UInt32) : Win32cr::Foundation::BOOL
+      Win32cr::Security::Credentials.credWriteW(credential, flags)
     end
 
-    def self.CredDeleteW(target_name : Win32cr::Foundation::PWSTR, type__ : UInt32, flags : UInt32) : Win32cr::Foundation::BOOL
-      C.CredDeleteW(target_name, type__, flags)
+    def self.cred_delete_w(target_name : Win32cr::Foundation::PWSTR, type__ : UInt32, flags : UInt32) : Win32cr::Foundation::BOOL
+      Win32cr::Security::Credentials.credDeleteW(target_name, type__, flags)
     end
 
-    def self.CredEnumerateW(filter : Win32cr::Foundation::PWSTR, flags : UInt32, count : UInt32*, credential : Win32cr::Security::Credentials::CREDENTIALW***) : Win32cr::Foundation::BOOL
-      C.CredEnumerateW(filter, flags, count, credential)
+    def self.cred_enumerate_w(filter : Win32cr::Foundation::PWSTR, flags : Win32cr::Security::Credentials::CRED_ENUMERATE_FLAGS, count : UInt32*, credential : Win32cr::Security::Credentials::CREDENTIALW***) : Win32cr::Foundation::BOOL
+      Win32cr::Security::Credentials.credEnumerateW(filter, flags, count, credential)
     end
 
-    def self.CredFree(buffer : Void*) : Void
-      C.CredFree(buffer)
+    def self.cred_free(buffer : Void*) : Void
+      Win32cr::Security::Credentials.credFree(buffer)
     end
   end
 {% end %}
