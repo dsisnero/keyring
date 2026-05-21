@@ -16,4 +16,12 @@
     alias CRED_PERSIST = Win32cr::Security::Credentials::CRED_PERSIST
     alias FILETIME = Win32cr::Foundation::FILETIME
   end
+
+  lib LibWin32
+    fun CredReadW(target_name : Win32cr::Foundation::PWSTR, type__ : UInt32, flags : UInt32, credential : Win32cr::Security::Credentials::CREDENTIALW**) : Win32cr::Foundation::BOOL
+    fun CredWriteW(credential : Win32cr::Security::Credentials::CREDENTIALW*, flags : UInt32) : Win32cr::Foundation::BOOL
+    fun CredDeleteW(target_name : Win32cr::Foundation::PWSTR, type__ : UInt32, flags : UInt32) : Win32cr::Foundation::BOOL
+    fun CredEnumerateW(filter : Win32cr::Foundation::PWSTR, flags : UInt32, count : UInt32*, credential : Win32cr::Security::Credentials::CREDENTIALW***) : Win32cr::Foundation::BOOL
+    fun CredFree(buffer : Void*) : Void
+  end
 {% end %}
