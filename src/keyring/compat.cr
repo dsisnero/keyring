@@ -15,13 +15,25 @@
     alias CRED_TYPE = Win32cr::Security::Credentials::CRED_TYPE
     alias CRED_PERSIST = Win32cr::Security::Credentials::CRED_PERSIST
     alias FILETIME = Win32cr::Foundation::FILETIME
-  end
 
-  lib LibWin32
-    fun CredReadW(target_name : Win32cr::Foundation::PWSTR, type__ : UInt32, flags : UInt32, credential : Win32cr::Security::Credentials::CREDENTIALW**) : Win32cr::Foundation::BOOL
-    fun CredWriteW(credential : Win32cr::Security::Credentials::CREDENTIALW*, flags : UInt32) : Win32cr::Foundation::BOOL
-    fun CredDeleteW(target_name : Win32cr::Foundation::PWSTR, type__ : UInt32, flags : UInt32) : Win32cr::Foundation::BOOL
-    fun CredEnumerateW(filter : Win32cr::Foundation::PWSTR, flags : UInt32, count : UInt32*, credential : Win32cr::Security::Credentials::CREDENTIALW***) : Win32cr::Foundation::BOOL
-    fun CredFree(buffer : Void*) : Void
+    def self.CredReadW(target_name : Win32cr::Foundation::PWSTR, type__ : UInt32, flags : UInt32, credential : Win32cr::Security::Credentials::CREDENTIALW**) : Win32cr::Foundation::BOOL
+      C.CredReadW(target_name, type__, flags, credential)
+    end
+
+    def self.CredWriteW(credential : Win32cr::Security::Credentials::CREDENTIALW*, flags : UInt32) : Win32cr::Foundation::BOOL
+      C.CredWriteW(credential, flags)
+    end
+
+    def self.CredDeleteW(target_name : Win32cr::Foundation::PWSTR, type__ : UInt32, flags : UInt32) : Win32cr::Foundation::BOOL
+      C.CredDeleteW(target_name, type__, flags)
+    end
+
+    def self.CredEnumerateW(filter : Win32cr::Foundation::PWSTR, flags : UInt32, count : UInt32*, credential : Win32cr::Security::Credentials::CREDENTIALW***) : Win32cr::Foundation::BOOL
+      C.CredEnumerateW(filter, flags, count, credential)
+    end
+
+    def self.CredFree(buffer : Void*) : Void
+      C.CredFree(buffer)
+    end
   end
 {% end %}
