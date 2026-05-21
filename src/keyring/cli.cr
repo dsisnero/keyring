@@ -355,7 +355,7 @@ module Keyring
           end
           out_puts "data root: #{Platform.data_root}"
         else
-          err_puts "ERROR: No command specified".colorize(:red)
+          err_puts "ERROR: Unknown command: #{command}".colorize(:red)
           err_puts parser
           terminate(1)
         end
@@ -372,7 +372,8 @@ module Keyring
     private def self.resolve_password(password, password_stdin) : String?
       return password if password
 
-      result = if password_stdin
+      # Auto-detect pipe input (like upstream's pass_from_pipe)
+      result = if password_stdin || !STDIN.tty?
                  if provider = @@password_provider
                    provider.call
                  else
