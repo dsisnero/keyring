@@ -50,6 +50,9 @@ jobs:
           windows-latest)
             shards install --skip-postinstall 2>&1 | grep -v "Could not find executable" || true
             cp patches/windows/mmap/mmap.cr lib/mmap/src/mmap.cr
+            cp patches/windows/sodium/lib_sodium.cr lib/sodium/src/sodium/lib_sodium.cr
+            cp patches/windows/sodium/pkg-libs.bat lib/sodium/build/pkg-libs.bat
+            cp patches/windows/sodium/env.bat lib/sodium/build/env.bat
             ;;
           *)
             shards install
@@ -165,6 +168,9 @@ jobs:
           windows-latest)
             shards install --skip-postinstall 2>&1 | grep -v "Could not find executable" || true
             cp patches/windows/mmap/mmap.cr lib/mmap/src/mmap.cr
+            cp patches/windows/sodium/lib_sodium.cr lib/sodium/src/sodium/lib_sodium.cr
+            cp patches/windows/sodium/pkg-libs.bat lib/sodium/build/pkg-libs.bat
+            cp patches/windows/sodium/env.bat lib/sodium/build/env.bat
             ;;
           *)
             shards install
