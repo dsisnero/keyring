@@ -409,7 +409,7 @@ module Keyring
       windows_epoch = Time.utc(1601, 1, 1)
 
       # Convert to 64-bit integer
-      timestamp = (file_time.high_date_time.to_u64 << 32) | file_time.low_date_time.to_u64
+      timestamp = (file_time.dwHighDateTime.to_u64 << 32) | file_time.dwLowDateTime.to_u64
 
       # Convert to seconds
       seconds = timestamp / 10_000_000
