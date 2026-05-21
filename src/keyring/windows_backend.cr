@@ -372,7 +372,7 @@ module Keyring
 
     # Get existing comment for a credential target
     private def get_existing_comment(target : String) : String?
-      win_target = target.to_utf16
+      win_target = target.to_utf16.to_unsafe
       credential_ptr = Pointer(LibWin32::CREDENTIALW).null
       ret = LibWin32.cred_read_w(win_target, CRED_TYPE_GENERIC, 0_u32, pointerof(credential_ptr))
       return if ret == 0
@@ -388,7 +388,7 @@ module Keyring
     # Fetch a single credential with metadata
     private def fetch_credential(service : String, username : String) : Credential?
       target = "#{service}:#{username}"
-      win_target = target.to_utf16
+      win_target = target.to_utf16.to_unsafe
       credential_ptr = Pointer(LibWin32::CREDENTIALW).null
       ret = LibWin32.cred_read_w(win_target, CRED_TYPE_GENERIC, 0_u32, pointerof(credential_ptr))
       return if ret == 0
