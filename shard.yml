@@ -10,7 +10,8 @@ targets:
 
 dependencies:
   win32cr:
-    github: mjblack/win32cr
+    github: dsisnero/win32cr
+    branch: fix/reopenfile-conflict
   sodium:
     github: didactic-drunk/sodium.cr
     branch: master

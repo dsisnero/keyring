@@ -10,7 +10,7 @@ shards:
 
   connect-proxy:
     git: https://github.com/spider-gazelle/connect-proxy.git
-    version: 2.0.2
+    version: 2.0.3
 
   crypto-secret:
     git: https://github.com/didactic-drunk/crypto-secret.cr.git
@@ -18,7 +18,7 @@ shards:
 
   git-repository:
     git: https://github.com/place-labs/git-repository.git
-    version: 1.6.0
+    version: 1.7.1
 
   mmap:
     git: https://github.com/crystal-posix/mmap.cr.git
@@ -33,10 +33,10 @@ shards:
     version: 0.14.0
 
   win32cr:
-    git: https://github.com/mjblack/win32cr.git
-    version: 1.2.1
+    git: https://github.com/dsisnero/win32cr.git
+    version: 1.2.1+git.commit.39b9e7486a93129cf3282bbb10c7f6394e33f208
 
   winmd:
     git: https://github.com/mjblack/winmd.git
-    version: 1.2.1
+    version: 1.2.2
 
