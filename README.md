@@ -2,29 +2,39 @@
 
 [![CI](https://github.com/dsisnero/keyring/actions/workflows/ci.yml/badge.svg)](https://github.com/dsisnero/keyring/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Crystal](https://img.shields.io/badge/crystal-%3E%3D1.14.0-blue.svg)](https://crystal-lang.org)
+[![Crystal](https://img.shields.io/badge/crystal-%3E%3D1.15.0-blue.svg)](https://crystal-lang.org)
 
-A Crystal port of https://github.com/jaraco/keyring (Python keyring v25.7.0), providing secure password/secret storage across different platforms.
-
-**Upstream source**: `vendor/python-keyring` (git submodule, pinned to [v25.7.0](https://github.com/jaraco/keyring/releases/tag/v25.7.0), commit `38c0401`)
+A Crystal port of [jaraco/keyring](https://github.com/jaraco/keyring) (Python keyring v25.7.0), providing cross-platform secure password and secret storage.
 
 ## Features
 
-- Secure storage of passwords and credentials
-- Multiple backend support:
-  - **macOS Keychain** (via Security.framework C API) - 15/15 tests ✅
-  - Windows Credential Manager (via win32cr)
-  - **Linux Secret Service** (libsecret with GNOME Keyring/KWallet) - 25+ tests ✅
-  - **File backend** (encrypted JSON storage with Sodium) - 28/28 tests ✅
-- Password encryption support (Sodium SecretBox, Argon2)
-- Command-line interface
-- Configurable logging
-- Import/export functionality
-- High performance (direct C API calls)
+- **Cross-platform** — macOS Keychain, Windows Credential Manager, Linux Secret Service/KWallet, and an encrypted file fallback
+- **Automatic backend selection** — picks the best available backend by platform priority
+- **Runtime failover** — circuit breakers + automatic backend switching on persistent failure
+- **Password encryption** — Sodium SecretBox (XSalsa20-Poly1305) and Argon2 hashing
+- **Metadata storage** — attach arbitrary key/value pairs to credentials (macOS Keychain, Windows Credential Manager)
+- **Backend registry** — auto-registration via `Backend.register(self)`; discover all available backends at runtime
+- **Retry with backoff** — configurable retry policy for transient failures
+- **Operation metrics** — per-backend per-operation latency and success/failure tracking
+- **CLI** — full command-line interface with get/set/delete/list/search/export/import
+
+## Backends
+
+| Backend | Platforms | Priority | Status |
+|---------|-----------|----------|--------|
+| `MacOsKeyChainBackend` | macOS | 5 | Native Security.framework C API |
+| `WindowsBackend` | Windows | 5 | Credential Manager via win32cr |
+| `LinuxSecretServiceBackend` | Linux | 5 | libsecret + D-Bus Secret Service |
+| `KWalletBackend` | Linux (KDE) | 4.9 | KDE KWallet5 via D-Bus |
+| `KWallet4Backend` | Linux (KDE4) | 4.8 | KDE KWallet4 via D-Bus |
+| `FileBackend` | All | 4 | Encrypted JSON file (Sodium) |
+| `ChainerBackend` | All | — | Iterates all viable backends |
+| `NullBackend` | All | -1 | No-op (use `--disable`) |
+| `FailBackend` | All | 0 | Always raises (fallback) |
 
 ## Installation
 
-1. Add the dependency to your `shard.yml`:
+1. Add to `shard.yml`:
 
 ```yaml
 dependencies:
@@ -34,77 +44,154 @@ dependencies:
 
 2. Run `shards install`
 
+3. Install system dependencies:
+
+| OS | Command |
+|----|---------|
+| macOS | `brew install libsodium` |
+| Ubuntu | `sudo apt install libsodium-dev libsecret-1-dev` |
+| Windows | `vcpkg install` (uses vcpkg.json) |
+
 ## Usage
 
-### As a Library
+### Module-Level API
 
 ```crystal
 require "keyring"
 
-# Create a keyring instance
-keyring = Keyring::Keyring.new
-
 # Store a password
-keyring.set_password("MyApp", "username", "secret123")
+Keyring.set_password("myapp", "alice", "s3cret")
 
 # Retrieve a password
-password = keyring.get_password("MyApp", "username")
+password = Keyring.get_password("myapp", "alice")
+puts password # => "s3cret"
+
+# Get a credential (username + password)
+cred = Keyring.get_credential("myapp", "alice")
+puts cred.username # => "alice"
+puts cred.password # => "s3cret"
 
 # Delete a password
-keyring.delete_password("MyApp", "username")
+Keyring.delete_password("myapp", "alice")
 
-# List all credentials (returns service/account pairs without passwords)
-credentials = keyring.list_credentials
-credentials.each do |cred|
-  puts "Service: #{cred.service}, Account: #{cred.username}"
-  # Fetch password separately if needed:
-  # password = keyring.get_password(cred.service, cred.username)
-end
-
-# Search credentials
-results = keyring.search("MyApp")
+# Get password (returns nil if not found)
+Keyring.get_password("myapp", "nobody") # => nil
 ```
 
-### Command Line Interface
+### Instance API (Multiple Keyrings)
 
-```bash
-# Get a password
-keyring get -s MyApp -u username
+```crystal
+keyring = Keyring::Keyring.new
 
-# Set a password
-keyring set -s MyApp -u username -p secret123
-
-# Delete a password
-keyring delete -s MyApp -u username
+keyring.set_password("myapp", "alice", "s3cret")
+keyring.get_password("myapp", "alice")
 
 # List all credentials
-keyring list
+keyring.list_credentials.each do |cred|
+  puts "#{cred.service}:#{cred.username}"
+end
 
-# Search credentials
-keyring search -q "MyApp"
+# Search
+keyring.search("alice")
 
-# Export credentials
-keyring export -f credentials.json
+# List services
+keyring.list_services # => ["myapp"]
 
-# Import credentials
-keyring import -f credentials.json
+# List usernames for a service
+keyring.list_usernames("myapp") # => ["alice"]
+
+# Export/import
+keyring.export_credentials("/tmp/creds.json")
+keyring.import_credentials("/tmp/creds.json")
+```
+
+### Backend Selection
+
+```crystal
+# Use a specific backend by name
+keyring = Keyring::Keyring.new
+keyring.switch_to_backend("FileBackend")
+
+# Or set globally
+Keyring.set_keyring(Keyring::FileBackend.new)
+
+# Discover all available backends
+Keyring.get_all_keyring.each do |backend|
+  puts backend.class.display_name
+end
+```
+
+## Command Line Interface
+
+```bash
+# Basic operations
+keyring get -s myapp -u alice          # get password (plain text)
+keyring get -s myapp -u alice --mode creds  # get username + password
+keyring set -s myapp -u alice          # set password (interactive prompt)
+keyring delete -s myapp -u alice       # delete password
+
+# List, search, export
+keyring list                           # list all credentials
+keyring list --output json             # JSON output
+keyring search -q "alice"              # search by query
+keyring export -f creds.json           # export all credentials
+keyring import -f creds.json           # import from file
+
+# Management
+keyring backend                        # show current backend
+keyring backend --list                 # list available backends
+keyring backend --switch FileBackend   # switch backend at runtime
+keyring config show                    # show configuration
+keyring config set encrypt_passwords true  # update config
+keyring diagnose                       # show config/data paths
+keyring generate-key                   # generate encryption key
+keyring update -s myapp -u alice       # update existing password
+keyring --disable                      # disable keyring (use NullBackend)
+
+# Shell completion
+keyring completion bash                # generate bash completions
+keyring completion zsh                 # generate zsh completions
+```
+
+### Pipe Input
+
+```bash
+echo "mypassword" | keyring set -s myapp -u alice
 ```
 
 ## Configuration
 
-Configuration is stored in:
-- Windows: `%APPDATA%\keyring\config.yml`
-- Linux/macOS: `~/.config/keyring/config.yml`
+Configuration file: `~/.config/keyring_cr/config.yml` (Linux/macOS) or `%APPDATA%\keyring_cr\config.yml` (Windows).
 
-Example configuration:
 ```yaml
-preferred_backend: WindowsBackend
-default_service: MyApp
+# Preferred backend (auto-detected if not set)
+preferred_backend: MacOsKeyChainBackend
+
+# Backend selection priority order
+backend_priority:
+  - MacOsKeyChainBackend
+  - FileBackend
+
+# Password encryption
 encrypt_passwords: true
-encryption_key: your-secret-key
-log_level: INFO
-log_file: ~/.keyring/keyring.log
+encryption_key: your-sodium-secret-key
+
+# Logging
+log_level: DEBUG
+log_file: ~/.keyring_cr/keyring.log
+
+# Default service name
+default_service: myapp
 ```
+
+### Environment Variables
+
+| Variable | Purpose |
+|----------|---------|
+| `KEYRING_BACKEND` | Force a specific backend by name |
+| `KEYRING_PROPERTY_<name>` | Set arbitrary backend properties |
+| `KEYRING_ENCRYPT` | Override encrypt_passwords (true/false) |
+| `KEYRING_LOG_LEVEL` | Override logging level |
 
 ## macOS Keychain Permissions
 
@@ -179,104 +266,65 @@ You can view and modify keychain item permissions using Keychain Access app:
 - Check that the keychain is unlocked
 - Verify you have permission to access the keychain
 
-## Development
+## Architecture
 
-### Local Development (macOS/Windows)
-
-1. Clone the repository
-2. Run `shards install`
-3. Run tests with `crystal spec` or `make test`
-4. Format code with `make format` or `crystal tool format`
-5. Lint code with `make lint` or `ameba`
-6. Run pre-commit checks with `make pre-commit` (format + lint)
-
-### Linux Backend Development (Containers)
-
-The Linux backend uses libsecret for GNOME Keyring/KWallet access. Use containers to test on macOS/Windows:
-
-```bash
-# Check which container runtime is available
-make container-info
-
-# Build container environment
-make docker-build
-
-# Run Linux backend tests
-make test-linux
-
-# Interactive development
-make docker-dev
+```
+Keyring::Backend (abstract)
+  ├── MacOsKeyChainBackend     — macOS Keychain via Security.framework
+  ├── WindowsBackend           — Windows Credential Manager via win32cr
+  ├── LinuxSecretServiceBackend — Linux Secret Service via libsecret
+  ├── KWalletBackend           — KDE KWallet5 via D-Bus
+  ├── KWallet4Backend          — KDE KWallet4 via D-Bus
+  ├── ChainerBackend           — Iterates all viable backends
+  ├── FileBackend              — Encrypted JSON file (universal fallback)
+  ├── NullBackend              — No-op (disable keyring)
+  └── FailBackend              — Always raises (last-resort fallback)
 ```
 
-The Makefile automatically detects and uses the best available container runtime:
-- **Apple container** (macOS 15.6+) - Fastest, native to macOS
-- **docker-compose** - Standard fallback
-- **docker** - Lightweight fallback
+See [docs/architecture.md](docs/architecture.md) for details.
 
-See [docs/LINUX_TESTING.md](docs/LINUX_TESTING.md) for container setup and [docs/LINUX_BACKEND.md](docs/LINUX_BACKEND.md) for implementation details.
+## Development
+
+```bash
+shards install          # Install dependencies
+crystal spec            # Run all 313 tests
+make format-check       # Check code formatting
+make lint               # Run Ameba linter
+shards build            # Build CLI binary
+```
+
+### Linux Backend Testing (Container)
+
+```bash
+make docker-build       # Build container
+make test-linux         # Run Linux-specific tests in container
+```
 
 ## Continuous Integration
 
-This project uses GitHub Actions for continuous integration and deployment:
-
-### CI Pipeline
-- **Tests**: Runs on Ubuntu, macOS, and Windows with Crystal 1.14.0 and latest
-- **Linting**: Uses Ameba with custom configuration (.ameba.yml)
-- **Formatting**: Crystal tool format check
-- **Security**: Gitleaks scanning for secrets
-- **Build**: Creates release binaries for all platforms when tags are pushed
-
-### Release Process
-When a new version tag (vX.Y.Z) is pushed:
-1. CI runs all tests on all platforms
-2. Binaries are built for each platform/architecture:
-   - `keyring` (Linux x64)
-   - `keyring` (macOS arm64)
-   - `keyring.exe` (Windows x64)
-3. All binaries are uploaded to the GitHub Release
-4. Release notes are automatically generated
-
-### Build Commands
-- Local build: `shards build`
-- Release build: `shards build --release`
-- Test all: `make test` or `crystal spec`
-- Format code: `make format` or `crystal tool format`
-- Lint code: `make lint` or `ameba --fail-level Error`
-
-## Upstream README Highlights
-
-Key concepts from the [upstream Python keyring](https://github.com/jaraco/keyring) (v25.7.0):
-
-- **Recommended backends**: macOS Keychain, Freedesktop Secret Service (GNOME/KDE), Windows Credential Locker
-- **Third-party backends**: Extensible via the `keyrings` namespace (BitWarden, 1Password, Google Sheets, pass, etc.)
-- **API**: `get_password`, `set_password`, `delete_password`, `get_credential` with `(service, username)` signatures
-- **Configuration**: `keyringrc.cfg` file with `default-keyring` and `keyring-path` options
-- **Runtime config**: `set_keyring()` for programmatic backend selection
-- **Environments**: `PYTHON_KEYRING_BACKEND` to force a specific backend; `--disable` to use Null backend
-- **Errors**: `KeyringError`, `InitError`, `PasswordSetError`, `PasswordDeleteError`
-
-See `vendor/python-keyring/README.rst` for the full upstream documentation.
+GitHub Actions runs on every push/PR to main:
+- **Test** — macOS, Windows, Ubuntu (tests + binary build)
+- **Lint** — Crystal format check + Ameba
+- **KWallet** — KDE KWallet backend tests with D-Bus
+- **Binaries** — Release binaries for all platforms (on main push)
+- **Release** — GitHub Release with platform binaries (on tag push)
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on how to contribute to this project.
-
-### Quick Start
-
-1. Fork the repository (<https://github.com/dsisnero/keyring/fork>)
+1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes and ensure tests pass (`make test`)
-4. Format your code (`make format`) and check linting (`make lint`)
-5. Commit your changes with descriptive messages
-6. Push to your branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+3. Make changes, add tests
+4. Run quality gates: `crystal spec && make lint && make format-check`
+5. Commit with conventional commit messages (`feat:`, `fix:`, `test:`, `docs:`, `chore:`)
+6. Push and open a Pull Request
 
-For more details, coding standards, and development setup, please read [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## Contributors
-
-- [Dominic Sisneros](https://github.com/dsisnero) - creator and maintainer
+See [docs/development.md](docs/development.md) for detailed setup and conventions.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE) for details.
+
+## Credits
+
+- [jaraco/keyring](https://github.com/jaraco/keyring) — upstream Python library (v25.7.0)
+- [Dominic Sisneros](https://github.com/dsisnero) — Crystal port

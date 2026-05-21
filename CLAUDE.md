@@ -24,11 +24,7 @@ crystal spec spec/keyring/macos_backend_spec.cr
 
 # Code quality
 crystal tool format --check src spec   # format check
-shards build && crystal run lib/ameba/bin/ameba.cr -- --fail-level Error  # lint
-
-# Linux backends (container)
-make docker-build && make docker-test
-make test-linux
+make lint                              # ameba (--fail-level Error)
 ```
 
 ## Quality Gates
@@ -44,12 +40,13 @@ make test-linux
 
 | Doc | Contents |
 |---|---|
-| `docs/architecture.md` | Module and backend overview |
-| `docs/development.md` | Environment setup, toolchain |
+| `README.md` | Project overview, features, installation, usage, CLI, config, contributing |
+| `docs/architecture.md` | Module and backend overview, selection logic, encryption |
+| `docs/development.md` | Environment setup, toolchain, platform-specific dev |
 | `docs/coding-guidelines.md` | Crystal style, naming, lint rules |
-| `docs/testing.md` | Spec conventions, backend contract tests |
+| `docs/testing.md` | Spec conventions, backend contract tests, test structure |
 | `docs/pr-workflow.md` | Branch, commit, review process |
-| `docs/deviations.md` | Intentional differences from upstream |
+| `docs/deviations.md` | Intentional differences from upstream Python |
 | `plans/parity.md` | Feature parity checklist vs Python v25.7.0 |
 | `plans/inventory/` | Source and test parity manifests (TSV) |
 
@@ -76,10 +73,13 @@ Types: `feat`, `fix`, `test`, `refactor`, `docs`, `chore`
 
 - Crystal code under `src/`, specs under `spec/` (mirroring source structure).
 - Backend abstract class in `src/keyring/backend.cr` defines the contract.
-- All backends implement `Backend#get_password`, `set_password`,
-  `delete_password`, `get_credential`, `list_credentials`.
-- Platform backends loaded via `{% if flag?(:darwin) %}` etc. in
-  `src/keyring/keyring.cr`.
+- Backends auto-register via `Backend.register(self)` at load time (`backend.cr`).
+- All backends implement `get_password`, `set_password`, `delete_password`,
+  `get_credential`, `list_credentials`.
+- Platform backends loaded via `{% if flag?(:darwin) %}` etc. in `src/keyring.cr`;
+  loaded before generic fallbacks for correct priority ordering.
+- Backend registry (`Backend.registry`) provides discovery; `get_all_keyring`
+  filters by viability.
 - Encryption via Sodium SecretBox/XSalsa20-Poly1305, hashing via Argon2.
 - Config is YAML (`config.yml`) with `KEYRING_*` env var overrides.
 - Temporary files belong in `./temp/` (gitignored, excluded from lint).
