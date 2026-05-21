@@ -36,7 +36,7 @@ module Keyring
         target = "#{service}:#{username}"
         win_target = target.to_utf16
         credential_ptr = Pointer(LibWin32::CREDENTIALW).null
-        ret = LibWin32.cred_read_w(win_target, CRED_TYPE_GENERIC, 0, pointerof(credential_ptr))
+        ret = LibWin32.cred_read_w(win_target, CRED_TYPE_GENERIC, 0_u32, pointerof(credential_ptr))
         if ret != 0
           begin
             credential = credential_ptr.value
@@ -158,7 +158,7 @@ module Keyring
         target = "#{service}:#{username}"
         win_target = target.to_utf16
         credential_ptr = Pointer(LibWin32::CREDENTIALW).null
-        ret = LibWin32.cred_read_w(win_target, CRED_TYPE_GENERIC, 0, pointerof(credential_ptr))
+        ret = LibWin32.cred_read_w(win_target, CRED_TYPE_GENERIC, 0_u32, pointerof(credential_ptr))
         if ret == 0
           raise KeyringError.new("Credential not found: #{service}:#{username}")
         end
@@ -374,7 +374,7 @@ module Keyring
     private def get_existing_comment(target : String) : String?
       win_target = target.to_utf16
       credential_ptr = Pointer(LibWin32::CREDENTIALW).null
-      ret = LibWin32.cred_read_w(win_target, CRED_TYPE_GENERIC, 0, pointerof(credential_ptr))
+      ret = LibWin32.cred_read_w(win_target, CRED_TYPE_GENERIC, 0_u32, pointerof(credential_ptr))
       return if ret == 0
       begin
         cred = credential_ptr.value
@@ -390,7 +390,7 @@ module Keyring
       target = "#{service}:#{username}"
       win_target = target.to_utf16
       credential_ptr = Pointer(LibWin32::CREDENTIALW).null
-      ret = LibWin32.cred_read_w(win_target, CRED_TYPE_GENERIC, 0, pointerof(credential_ptr))
+      ret = LibWin32.cred_read_w(win_target, CRED_TYPE_GENERIC, 0_u32, pointerof(credential_ptr))
       return if ret == 0
       begin
         cred = credential_ptr.value
