@@ -79,28 +79,19 @@ module Keyring
       @encrypt_passwords = encrypt.downcase == "true"
     end
 
+    # ameba:disable Metrics/CyclomaticComplexity
     def set_property(key : String, value : String)
       case key.downcase
-      when "preferred_backend"
-        @preferred_backend = value
-      when "backend_priority"
-        @backend_priority = value.split(',').map(&.strip).reject(&.empty?)
-      when "default_service"
-        @default_service = value
-      when "encrypt_passwords"
-        @encrypt_passwords = value.downcase.in?("true", "1", "yes")
-      when "encryption_key"
-        @encryption_key = value
-      when "log_level"
-        @log_level = value
-      when "encryption_type"
-        @encryption_type = value
-      when "encryption_public_key"
-        @encryption_public_key = value
-      when "encryption_secret_key"
-        @encryption_secret_key = value
-      when "log_file"
-        @log_file = value
+      when "preferred_backend"     then @preferred_backend = value
+      when "backend_priority"      then @backend_priority = value.split(',').map(&.strip).reject(&.empty?)
+      when "default_service"       then @default_service = value
+      when "encrypt_passwords"     then @encrypt_passwords = value.downcase.in?("true", "1", "yes")
+      when "encryption_key"        then @encryption_key = value
+      when "log_level"             then @log_level = value
+      when "encryption_type"       then @encryption_type = value
+      when "encryption_public_key" then @encryption_public_key = value
+      when "encryption_secret_key" then @encryption_secret_key = value
+      when "log_file"              then @log_file = value
       else
         raise ConfigError.new("Unknown config key: #{key}")
       end
