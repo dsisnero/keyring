@@ -41,7 +41,7 @@ module Keyring
           begin
             credential = credential_ptr.value
             # safely extract credential blob
-            return String.new(credential.credential_blob.as(UInt8*), credential.credential_blob_size)
+            return String.new(credential.credential_blob, credential.credential_blob_size)
           ensure
             LibWin32.cred_free(credential_ptr)
           end
@@ -308,7 +308,7 @@ module Keyring
     # Safely extract password from credential
     private def extract_password(cred : LibWin32::CREDENTIALW) : String
       String.new(
-        cred.credential_blob.to_unsafe.as(UInt8*),
+        cred.credential_blob,
         cred.credential_blob_size
       )
     end
@@ -394,7 +394,7 @@ module Keyring
       return if ret == 0
       begin
         cred = credential_ptr.value
-        password = String.new(cred.credential_blob.as(UInt8*), cred.credential_blob_size)
+        password = String.new(cred.credential_blob, cred.credential_blob_size)
         build_credential(service: service, username: username, password: password, cred: cred)
       ensure
         LibWin32.cred_free(credential_ptr) unless credential_ptr.null?
