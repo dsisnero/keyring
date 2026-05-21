@@ -79,7 +79,7 @@ module Keyring
       existing_comment = get_existing_comment(target)
 
       # Prepare credential structure
-      credential = LibWin32::CREDENTIALW.new
+      credential = uninitialized LibWin32::CREDENTIALW
       credential.type__ = CRED_TYPE_GENERIC
       credential.target_name = target.to_utf16.to_unsafe
       credential.user_name = username.to_utf16.to_unsafe
@@ -182,7 +182,7 @@ module Keyring
           metadata[key] = value
 
           # Create updated credential with new comment
-          updated = LibWin32::CREDENTIALW.new
+          updated = uninitialized LibWin32::CREDENTIALW
           updated.type__ = CRED_TYPE_GENERIC
           updated.target_name = win_target
           updated.user_name = username.to_utf16.to_unsafe
