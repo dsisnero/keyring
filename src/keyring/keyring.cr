@@ -400,7 +400,9 @@ module Keyring
       Log.info { "Importing credentials from #{path}" }
       credentials = Array(Credential).from_json(File.read(path))
       credentials.each do |cred|
-        set_password(cred.service, cred.username, cred.password.as(String))
+        if password = cred.password
+          set_password(cred.service, cred.username, password)
+        end
         cred.metadata.each do |k, v|
           set_metadata(cred.service, cred.username, k, v)
         end

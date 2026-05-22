@@ -122,7 +122,7 @@ module Keyring
           terminate(0)
         end
         opts.on("-k KEY", "--key=KEY", "Config key") { |key| config_key = key }
-        opts.on("--value=VALUE", "Config value (for config set)") { |val| config_value = val }
+        opts.on("-v VALUE", "--value=VALUE", "Config value (for config set)") { |val| config_value = val }
         opts.on("-h", "--help", "Show this help") do
           out_puts opts
           terminate(0)

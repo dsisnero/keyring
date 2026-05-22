@@ -138,15 +138,14 @@ keyring export -f creds.json           # export all credentials
 keyring import -f creds.json           # import from file
 
 # Management
-keyring backend                        # show current backend
-keyring backend --list                 # list available backends
-keyring backend --switch FileBackend   # switch backend at runtime
-keyring config show                    # show configuration
-keyring config set encrypt_passwords true  # update config
-keyring diagnose                       # show config/data paths
-keyring generate-key                   # generate encryption key
-keyring update -s myapp -u alice       # update existing password
-keyring --disable                      # disable keyring (use NullBackend)
+keyring backend list                    # list available backends (* = active)
+keyring backend switch FileBackend      # switch backend at runtime
+keyring config show                     # show current configuration
+keyring config set -k encrypt_passwords -v true  # update config
+keyring diagnose                        # show config/data paths
+keyring generate-key                    # generate encryption key
+keyring update -s myapp -u alice        # update existing password
+keyring --disable                       # disable keyring (use NullBackend, requires no existing config)
 
 # Shell completion
 keyring completion bash                # generate bash completions

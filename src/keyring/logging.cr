@@ -7,7 +7,7 @@ module Keyring
     backend = if path = config.log_file
                 ::Log::IOBackend.new(File.open(path, "a"))
               else
-                ::Log::IOBackend.new
+                ::Log::IOBackend.new(STDERR)
               end
 
     level = ::Log::Severity.parse(config.log_level)
