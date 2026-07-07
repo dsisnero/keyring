@@ -49,10 +49,6 @@ jobs:
         case "${{ matrix.os }}" in
           windows-latest)
             shards install --skip-postinstall 2>&1 | grep -v "Could not find executable" || true
-            cp patches/windows/mmap/mmap.cr lib/mmap/src/mmap.cr
-            cp patches/windows/sodium/lib_sodium.cr lib/sodium/src/sodium/lib_sodium.cr
-            cp patches/windows/sodium/pkg-libs.bat lib/sodium/build/pkg-libs.bat
-            cp patches/windows/sodium/env.bat lib/sodium/build/env.bat
             ;;
           *)
             shards install
@@ -60,26 +56,18 @@ jobs:
         esac
 
     - name: Format check
-      if: matrix.os != 'windows-latest'
       run: crystal tool format --check src spec
 
     - name: Run tests (macOS only)
       if: matrix.os == 'macos-latest'
       run: crystal spec
 
-    - name: Run tests (Linux - exclude secret service/kwallet)
-      if: matrix.os == 'ubuntu-latest'
+    - name: Run tests (Linux/Windows - exclude secret service/kwallet)
+      if: matrix.os != 'macos-latest'
       run: crystal spec spec/keyring/backend_contract_spec.cr spec/keyring/chainer_backend_spec.cr spec/keyring/circuit_breaker_spec.cr spec/keyring/cli_spec.cr spec/keyring/config_spec.cr spec/keyring/credential_spec.cr spec/keyring/encryption_spec.cr spec/keyring/file_backend_spec.cr spec/keyring/metrics_spec.cr spec/keyring/null_fail_backend_spec.cr spec/keyring/platform_spec.cr spec/keyring/reliability_spec.cr spec/keyring/retryable_spec.cr spec/keyring/backend_priority_spec.cr spec/keyring/backend_metadata_spec.cr spec/integration/end_to_end_spec.cr
 
     - name: Build binary
-      shell: bash
-      run: |
-        case "${{ matrix.os }}" in
-          windows-latest)
-            export LIB="$LIB;${{ github.workspace }}/vcpkg_installed/x64-windows/lib"
-            ;;
-        esac
-        shards build --release
+      run: shards build --release
 
     - name: Determine binary name
       id: bin-name
@@ -174,10 +162,6 @@ jobs:
         case "${{ matrix.os }}" in
           windows-latest)
             shards install --skip-postinstall 2>&1 | grep -v "Could not find executable" || true
-            cp patches/windows/mmap/mmap.cr lib/mmap/src/mmap.cr
-            cp patches/windows/sodium/lib_sodium.cr lib/sodium/src/sodium/lib_sodium.cr
-            cp patches/windows/sodium/pkg-libs.bat lib/sodium/build/pkg-libs.bat
-            cp patches/windows/sodium/env.bat lib/sodium/build/env.bat
             ;;
           *)
             shards install
@@ -185,14 +169,7 @@ jobs:
         esac
 
     - name: Build release binary
-      shell: bash
-      run: |
-        case "${{ matrix.os }}" in
-          windows-latest)
-            export LIB="$LIB;${{ github.workspace }}/vcpkg_installed/x64-windows/lib"
-            ;;
-        esac
-        shards build --release
+      run: shards build --release
 
     - name: Determine binary name
       id: bin-name-rel
@@ -260,7 +237,7 @@ jobs:
           libsodium-dev
 
     - name: Install shards
-      run: shards install --development --skip-postinstall 2>&1 | grep -v "Could not find executable" || true
+      run: shards install --skip-postinstall
 
     - name: Start D-Bus and KWallet
       run: |
@@ -279,4 +256,5 @@ jobs:
 
     - name: Run KWallet tests
       run: crystal spec spec/keyring/kwallet_backend_spec.cr
+
 

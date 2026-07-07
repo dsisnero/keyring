@@ -58,19 +58,21 @@ module Keyring
 
   # Asymmetric authenticated encryption: Curve25519 + XSalsa20-Poly1305 via Sodium::CryptoBox
   class CryptoBoxCrypter < Crypter
-    getter public_key : Bytes
-    getter secret_key : Bytes
+    getter secret_key : Sodium::CryptoBox::SecretKey
+    getter public_key : Sodium::CryptoBox::PublicKey
 
-    def initialize(public_key : String, secret_key : String)
-      @public_key = Base64.decode(public_key)
-      @secret_key = Base64.decode(secret_key)
-      raise EncryptionError.new("Invalid public key length") if @public_key.size != Sodium::CryptoBox::PUBLIC_KEY_SIZE
-      raise EncryptionError.new("Invalid secret key length") if @secret_key.size != Sodium::CryptoBox::SECRET_KEY_SIZE
+    def initialize(public_key_b64 : String, secret_key_b64 : String)
+      pk_bytes = Base64.decode(public_key_b64)
+      sk_bytes = Base64.decode(secret_key_b64)
+      raise EncryptionError.new("Invalid public key length") if pk_bytes.size != Sodium::CryptoBox::PublicKey::KEY_SIZE
+      raise EncryptionError.new("Invalid secret key length") if sk_bytes.size != Sodium::CryptoBox::SecretKey::KEY_SIZE
+      @public_key = Sodium::CryptoBox::PublicKey.new(pk_bytes)
+      @secret_key = Sodium::CryptoBox::SecretKey.new(sk_bytes, pk_bytes)
     end
 
     def encrypt(value : String) : String
       raise EncryptionError.new("Data cannot be empty") if value.empty?
-      box = Sodium::CryptoBox.copy_from(@public_key, @secret_key)
+      box = Sodium::CryptoBox.new(@secret_key, @public_key)
       encrypted_bytes, nonce = box.encrypt(value.to_slice)
       combined = nonce.to_slice + encrypted_bytes
       Base64.strict_encode(combined)
@@ -81,11 +83,11 @@ module Keyring
     def decrypt(value : String) : String
       raise EncryptionError.new("Encrypted data cannot be empty") if value.empty?
       raw = Base64.decode(value)
-      min_size = Sodium::CryptoBox::NONCE_SIZE + Sodium::CryptoBox::MAC_SIZE
+      min_size = Sodium::Nonce::NONCE_SIZE + Sodium::CryptoBox::MAC_SIZE
       raise EncryptionError.new("Decryption failed: data too short") if raw.size < min_size
-      nonce_bytes = raw[0, Sodium::CryptoBox::NONCE_SIZE]
-      data = raw[Sodium::CryptoBox::NONCE_SIZE, raw.size - Sodium::CryptoBox::NONCE_SIZE]
-      box = Sodium::CryptoBox.copy_from(@public_key, @secret_key)
+      nonce_bytes = raw[0, Sodium::Nonce::NONCE_SIZE]
+      data = raw[Sodium::Nonce::NONCE_SIZE, raw.size - Sodium::Nonce::NONCE_SIZE]
+      box = Sodium::CryptoBox.new(@secret_key, @public_key)
       nonce = Sodium::Nonce.new(nonce_bytes)
       String.new(box.decrypt(data, nonce: nonce))
     rescue ex : Sodium::Error | Base64::Error | IndexError
@@ -103,25 +105,31 @@ module Keyring
 
     # Generate a new encryption keypair (Curve25519)
     def self.generate_encryption : Keypair
-      pk = Bytes.new(Sodium::CryptoBox::PUBLIC_KEY_SIZE)
-      sk = Bytes.new(Sodium::CryptoBox::SECRET_KEY_SIZE)
-      Sodium::CryptoBox.keypair(pk, sk)
+      pk = Bytes.new(Sodium::CryptoBox::PublicKey::KEY_SIZE)
+      sk = Bytes.new(Sodium::CryptoBox::SecretKey::KEY_SIZE)
+      if Sodium::LibSodium.crypto_box_keypair(pk, sk) != 0
+        raise EncryptionError.new("Failed to generate encryption keypair")
+      end
       Keypair.new(Base64.strict_encode(pk), Base64.strict_encode(sk))
     end
 
     # Generate a new signing keypair (Ed25519)
     def self.generate_signing : Keypair
-      pk = Bytes.new(Sodium::Sign::PUBLIC_KEY_SIZE)
-      sk = Bytes.new(Sodium::Sign::SECRET_KEY_SIZE)
-      Sodium::Sign.keypair(pk, sk)
+      pk = Bytes.new(Sodium::Sign::PublicKey::KEY_SIZE)
+      sk = Bytes.new(Sodium::Sign::SecretKey::KEY_SIZE)
+      if Sodium::LibSodium.crypto_sign_keypair(pk, sk) != 0
+        raise EncryptionError.new("Failed to generate signing keypair")
+      end
       Keypair.new(Base64.strict_encode(pk), Base64.strict_encode(sk))
     end
 
     # Sign data with the secret key, returns base64 signature
     def sign(data : String) : String
       raw_sk = Base64.decode(@secret_key)
-      sig = Bytes.new(Sodium::Sign::SIGNATURE_SIZE)
-      Sodium::Sign.sign_detached(sig, data.to_slice, raw_sk)
+      sig = Bytes.new(Sodium::LibSodium.crypto_sign_bytes)
+      if Sodium::LibSodium.crypto_sign_detached(sig, nil, data.to_slice, data.bytesize, raw_sk) != 0
+        raise EncryptionError.new("Signing failed")
+      end
       Base64.strict_encode(sig)
     end
 
@@ -129,10 +137,7 @@ module Keyring
     def verify(data : String, signature : String) : Bool
       raw_pk = Base64.decode(@public_key)
       raw_sig = Base64.decode(signature)
-      Sodium::Sign.verify_detached(raw_sig, data.to_slice, raw_pk)
-      true
-    rescue Sodium::Error
-      false
+      Sodium::LibSodium.crypto_sign_verify_detached(raw_sig, data.to_slice, data.bytesize, raw_pk) == 0
     end
   end
 
