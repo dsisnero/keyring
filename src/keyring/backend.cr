@@ -9,9 +9,10 @@ module Keyring
 
     property scheme : String = "default"
 
-    def _query(service : String, username : String? = nil, **base : String) : Hash(String, String)
+    def _query(service : String, username : String? = nil, **base) : Hash(String, String)
       s = SCHEMES[@scheme]
-      result = base
+      result = {} of String => String
+      base.each { |k, v| result[k.to_s] = v.to_s }
       if username
         result = result.merge({s["username"] => username})
       end
@@ -74,6 +75,11 @@ module Keyring
       end
     end
 
+    # Internal setter for dup copies via with_properties
+    def env_properties=(props : Hash(String, String))
+      @env_properties = props
+    end
+
     # ameba:disable Naming/AccessorMethodName
     def set_properties_from_env(target : Hash(String, String)? = nil)
       props = target || env_properties
@@ -91,9 +97,10 @@ module Keyring
 
     def with_properties(**properties : String) : self
       alt = self.dup
-      properties.each do |key, value|
-        alt.env_properties[key.to_s] = value
-      end
+      props = {} of String => String
+      env_properties.each { |k, v| props[k] = v }
+      properties.each { |k, v| props[k.to_s] = v }
+      alt.env_properties = props
       alt
     end
 
