@@ -89,6 +89,23 @@ module Keyring
       @@current_keyring ||= Keyring.new
     end
 
+    # Module-level convenience methods (mirrors Python keyring.get_password etc.)
+    def self.get_password(service : String, username : String) : String?
+      keyring.get_password(service, username)
+    end
+
+    def self.set_password(service : String, username : String, password : String)
+      keyring.set_password(service, username, password)
+    end
+
+    def self.delete_password(service : String, username : String)
+      keyring.delete_password(service, username)
+    end
+
+    def self.get_credential(service : String, username : String) : Credential?
+      keyring.get_credential(service, username)
+    end
+
     # Load a backend class by display name or class name.
     # Mirrors Python keyring.load_keyring() / _load_keyring_class().
     def self.load_keyring(keyring_name : String) : Backend

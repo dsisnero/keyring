@@ -89,4 +89,80 @@ describe Keyring do
       end
     end
   end
+
+  describe "module-level API" do
+    it "load_env returns backend from KEYRING_BACKEND env" do
+      with_env("KEYRING_BACKEND", "FileBackend") do
+        backend = Keyring::Keyring.load_env
+        backend.should be_a(Keyring::FileBackend)
+      end
+    end
+
+    it "load_env returns nil when env not set" do
+      with_env("KEYRING_BACKEND", nil) do
+        Keyring::Keyring.load_env.should be_nil
+      end
+    end
+
+    it "load_config returns backend from KEYRING_BACKEND env" do
+      with_env("KEYRING_BACKEND", "FileBackend") do
+        backend = Keyring::Keyring.load_config
+        backend.should be_a(Keyring::FileBackend)
+      end
+    end
+
+    it "load_keyring loads backend by class name" do
+      backend = Keyring::Keyring.load_keyring("FileBackend")
+      backend.should be_a(Keyring::FileBackend)
+    end
+
+    it "load_keyring raises for unknown backend" do
+      expect_raises(Keyring::KeyringError, /not found/) do
+        Keyring::Keyring.load_keyring("NonExistentBackend")
+      end
+    end
+
+    it "get_all_keyring returns viable backends" do
+      backends = Keyring::Keyring.get_all_keyring
+      backends.should be_a(Array(Keyring::Backend))
+      backends.should_not be_empty
+    end
+
+    it "disable creates config with NullBackend" do
+      tmp = "/tmp/keyring-disable-#{Random.rand(1_000_000)}"
+      cfg_dir = File.join(tmp, "keyring_cr")
+      Dir.mkdir_p(cfg_dir)
+      with_env("XDG_CONFIG_HOME", tmp) do
+        Keyring.disable
+        config_path = File.join(cfg_dir, "config.yml")
+        File.exists?(config_path).should be_true
+        File.read(config_path).should contain("NullBackend")
+      end
+      FileUtils.rm_rf(tmp) if Dir.exists?(tmp)
+    end
+
+    it "disable raises if config already exists" do
+      tmp = "/tmp/keyring-disable2-#{Random.rand(1_000_000)}"
+      cfg_dir = File.join(tmp, "keyring_cr")
+      Dir.mkdir_p(cfg_dir)
+      File.write(File.join(cfg_dir, "config.yml"), "existing: true\n")
+      with_env("XDG_CONFIG_HOME", tmp) do
+        expect_raises(Keyring::KeyringError, /Refusing to overwrite/) do
+          Keyring.disable
+        end
+      end
+      FileUtils.rm_rf(tmp) if Dir.exists?(tmp)
+    end
+
+    it "module-level keyring set/get/delete work" do
+      backend = Keyring::MockBackend.new
+      Keyring::Keyring.keyring = backend
+      kr = Keyring::Keyring.keyring
+      svc = "mod-api-#{Random.rand(10_000)}"
+      kr.set_password(svc, "user", "pass")
+      kr.get_password(svc, "user").should eq("pass")
+      kr.delete_password(svc, "user")
+      kr.get_password(svc, "user").should be_nil
+    end
+  end
 end
