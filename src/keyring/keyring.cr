@@ -295,10 +295,19 @@ module Keyring
     def get_credential(service : String, username : String? = nil) : Credential?
       if username.nil? || username.empty?
         creds = list_credentials
-        creds.find { |cred| cred.service == service }
+        cred = creds.find { |c| c.service == service }
+        cred.try { |c| c.password = decrypt_if_needed(c.password) }
+        cred
       else
-        with_operation("get_credential") { |backend| backend.get_credential(service, username) }
+        cred = with_operation("get_credential") { |backend| backend.get_credential(service, username) }
+        cred.try { |c| c.password = decrypt_if_needed(c.password) }
+        cred
       end
+    end
+
+    private def decrypt_if_needed(password : String?) : String?
+      return nil unless password
+      @config.encrypt_passwords? ? @crypter.decrypt(password) : password
     end
 
     def list_credentials : Array(Credential)

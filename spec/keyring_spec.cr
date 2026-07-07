@@ -211,6 +211,25 @@ describe Keyring do
         kr.set_password(svc, "user", "secret456")
         kr.get_password(svc, "user").should eq("secret456")
       end
+
+      it "get_credential returns decrypted password" do
+        config = TestHelpers.create_test_config(encrypt: true)
+        kr = Keyring::Keyring.new(backend: Keyring::MockBackend.new, config: config)
+        svc = "cred-enc-#{Random.rand(10_000)}"
+        kr.set_password(svc, "user", "plain-pass")
+        cred = kr.get_credential(svc, "user")
+        cred.should_not be_nil
+        cred.not_nil!.password.should eq("plain-pass")
+      end
+
+      it "update_password works with encryption" do
+        config = TestHelpers.create_test_config(encrypt: true)
+        kr = Keyring::Keyring.new(backend: Keyring::MockBackend.new, config: config)
+        svc = "upd-enc-#{Random.rand(10_000)}"
+        kr.set_password(svc, "user", "old-enc")
+        kr.update_password(svc, "user", "new-enc")
+        kr.get_password(svc, "user").should eq("new-enc")
+      end
     end
   end
 end
