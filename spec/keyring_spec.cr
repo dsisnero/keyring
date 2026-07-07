@@ -282,5 +282,90 @@ describe Keyring do
         cred.not_nil!.password.should eq("meta-pass")
       end
     end
+
+    describe "query methods" do
+      it "list_services returns unique service names" do
+        kr = Keyring::Keyring.new(backend: Keyring::MockBackend.new)
+        kr.set_password("svc-a", "user1", "p1")
+        kr.set_password("svc-a", "user2", "p2")
+        kr.set_password("svc-b", "user3", "p3")
+
+        services = kr.list_services
+        services.sort.should eq(["svc-a", "svc-b"])
+      end
+
+      it "list_usernames returns usernames for a service" do
+        kr = Keyring::Keyring.new(backend: Keyring::MockBackend.new)
+        kr.set_password("svc-x", "alice", "p1")
+        kr.set_password("svc-x", "bob", "p2")
+        kr.set_password("svc-y", "charlie", "p3")
+
+        kr.list_usernames("svc-x").sort.should eq(["alice", "bob"])
+        kr.list_usernames("svc-y").should eq(["charlie"])
+      end
+
+      it "search finds credentials by service" do
+        kr = Keyring::Keyring.new(backend: Keyring::MockBackend.new)
+        kr.set_password("myapp-prod", "admin", "secret")
+        kr.set_password("myapp-dev", "admin", "dev-secret")
+
+        kr.search("prod").size.should eq(1)
+        kr.search("myapp").size.should eq(2)
+        kr.search("nope").size.should eq(0)
+      end
+
+      it "advanced_search filters by service and username" do
+        kr = Keyring::Keyring.new(backend: Keyring::MockBackend.new)
+        kr.set_password("app1", "alice", "p1")
+        kr.set_password("app1", "bob", "p2")
+        kr.set_password("app2", "alice", "p3")
+
+        results = kr.advanced_search(service: "app1")
+        results.size.should eq(2)
+
+        results = kr.advanced_search(service: "app1", username: "alice")
+        results.size.should eq(1)
+        results[0].username.should eq("alice")
+      end
+
+      it "advanced_search filters by metadata" do
+        kr = Keyring::Keyring.new(backend: Keyring::MockBackend.new)
+        kr.set_password("app", "user1", "p1")
+        kr.set_metadata("app", "user1", "env", "production")
+        kr.set_password("app", "user2", "p2")
+        kr.set_metadata("app", "user2", "env", "staging")
+
+        results = kr.advanced_search(metadata: {"env" => "production"})
+        results.size.should eq(1)
+        results[0].username.should eq("user1")
+      end
+
+      it "advanced_search filters by created_after" do
+        kr = Keyring::Keyring.new(backend: Keyring::MockBackend.new)
+        kr.set_password("old", "user", "p1")
+        sleep 10.milliseconds
+        cutoff = Time.utc
+        sleep 10.milliseconds
+        kr.set_password("new", "user", "p2")
+
+        results = kr.advanced_search(created_after: cutoff)
+        results.size.should eq(1)
+        results[0].service.should eq("new")
+      end
+    end
+
+    describe "metadata persistence" do
+      it "set_metadata fallback preserves existing metadata" do
+        kr = Keyring::Keyring.new(backend: Keyring::MockBackend.new)
+        kr.set_password("app", "user", "pass")
+        kr.set_metadata("app", "user", "tag", "first")
+        kr.set_metadata("app", "user", "env", "prod")
+
+        cred = kr.get_credential("app", "user")
+        cred.should_not be_nil
+        cred.not_nil!.metadata["tag"].should eq("first")
+        cred.not_nil!.metadata["env"].should eq("prod")
+      end
+    end
   end
 end
