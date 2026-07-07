@@ -179,6 +179,23 @@ describe Keyring do
       (backend.is_a?(Keyring::FailBackend)).should be_false
     end
 
+    it "_detect_backend returns highest priority viable backend" do
+      Keyring::Keyring.reset_backend_overrides
+      # Override candidates to test priority ordering.
+      # Low-priority FileBackend vs high-priority LinuxSecretServiceBackend
+      Keyring::Keyring.override_backend_candidates([
+        Keyring::FileBackend,
+        Keyring::LinuxSecretServiceBackend,
+      ] of Keyring::Backend.class)
+
+      backend = Keyring::Keyring._detect_backend
+      # Priority: FileBackend=0.5, LinuxSecretServiceBackend=5.0
+      # Highest priority should win
+      backend.should be_a(Keyring::LinuxSecretServiceBackend)
+    ensure
+      Keyring::Keyring.reset_backend_overrides
+    end
+
     it "recommended rejects low-priority backends" do
       Keyring::Keyring.recommended?(Keyring::NullBackend).should be_false
       Keyring::Keyring.recommended?(Keyring::FileBackend).should be_false
@@ -250,6 +267,19 @@ describe Keyring do
         kr2.get_password(svc2, "user2").should eq("pass2")
 
         File.delete(export_path) if File.exists?(export_path)
+      end
+
+      it "set_metadata works with encrypted passwords" do
+        config = TestHelpers.create_test_config(encrypt: true)
+        kr = Keyring::Keyring.new(backend: Keyring::MockBackend.new, config: config)
+        svc = "meta-enc-#{Random.rand(10_000)}"
+        kr.set_password(svc, "user", "meta-pass")
+        kr.set_metadata(svc, "user", "note", "test-value")
+
+        cred = kr.get_credential(svc, "user")
+        cred.should_not be_nil
+        cred.not_nil!.metadata["note"].should eq("test-value")
+        cred.not_nil!.password.should eq("meta-pass")
       end
     end
   end

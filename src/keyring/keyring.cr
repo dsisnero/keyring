@@ -170,12 +170,14 @@ module Keyring
     end
 
     # Return the best available backend considering the limit filter.
+    # Mirrors Python: max(filter(limit, backends), key=by_priority).
     private def self.best_available_backend : Backend
       candidates = @@candidates_override || get_candidate_list_static
       if limit = @@backend_limit
         candidates = candidates.select(&limit)
       end
-      klass = candidates.find(&.viable?)
+      viable = candidates.select(&.viable?)
+      klass = viable.max_by?(&.priority)
       if klass
         klass.new
       else
