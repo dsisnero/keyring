@@ -4,15 +4,27 @@ module Keyring
   class SchemeTestBackend < Backend
     include SchemeSelectable
 
-    def self.available? : Bool; true; end
+    def self.available? : Bool
+      true
+    end
 
     def initialize; end
 
-    def get_password(service : String, username : String) : String?; nil; end
+    def get_password(service : String, username : String) : String?
+      nil
+    end
+
     def set_password(service : String, username : String, password : String); end
+
     def delete_password(service : String, username : String); end
-    def get_credential(service : String, username : String) : Credential?; nil; end
-    def list_credentials : Array(Credential); [] of Credential; end
+
+    def get_credential(service : String, username : String) : Credential?
+      nil
+    end
+
+    def list_credentials : Array(Credential)
+      [] of Credential
+    end
   end
 
   describe SchemeSelectable do
@@ -47,15 +59,27 @@ module Keyring
   end
 
   class PropsTestBackend < Backend
-    def self.available? : Bool; true; end
+    def self.available? : Bool
+      true
+    end
 
     def initialize; end
 
-    def get_password(service : String, username : String) : String?; nil; end
+    def get_password(service : String, username : String) : String?
+      nil
+    end
+
     def set_password(service : String, username : String, password : String); end
+
     def delete_password(service : String, username : String); end
-    def get_credential(service : String, username : String) : Credential?; nil; end
-    def list_credentials : Array(Credential); [] of Credential; end
+
+    def get_credential(service : String, username : String) : Credential?
+      nil
+    end
+
+    def list_credentials : Array(Credential)
+      [] of Credential
+    end
   end
 
   describe Backend do

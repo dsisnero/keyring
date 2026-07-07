@@ -79,6 +79,7 @@ module Keyring
       @encrypt_passwords = encrypt.downcase == "true"
     end
 
+    # ameba:disable Metrics/CyclomaticComplexity
     def set_property(key : String, value : String)
       case key.downcase
       when "preferred_backend"
