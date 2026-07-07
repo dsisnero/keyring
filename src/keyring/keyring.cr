@@ -30,6 +30,7 @@ module Keyring
   class Keyring
     getter backend : Backend
     getter config : Config
+    getter crypter : Crypter
 
     # Class-level instance for module-level API (keyring=/keyring)
     @@current_keyring : Keyring? = nil
@@ -233,11 +234,12 @@ module Keyring
       end
     end
 
-    def initialize(config_path : String? = nil, *, backend : Backend? = nil)
-      @config = config_path ? Config.load(config_path) : Config.load
+    def initialize(config_path : String? = nil, *, backend : Backend? = nil, config : Config? = nil)
+      @config = config || (config_path ? Config.load(config_path) : Config.load)
       ::Keyring.setup_logging(@config)
       @retry_config = Retryable.default
       @failover_enabled = true
+      @crypter = Encryption.build_crypter(@config)
       @backend = backend || get_preferred_backend
       Log.info { "Initialized keyring with backend: #{@backend.class}" }
     end
@@ -248,8 +250,8 @@ module Keyring
       cred = with_operation("get_password") { |backend| backend.get_credential(service, username) }
       return unless cred
       return unless password = cred.password
-      if @config.encrypt_passwords? && (key = @config.encryption_key)
-        Encryption.decrypt(password, key)
+      if @config.encrypt_passwords?
+        @crypter.decrypt(password)
       else
         password
       end
@@ -259,11 +261,11 @@ module Keyring
       validate_params(service, username)
       raise KeyringError.new("Password cannot be empty") if password.empty?
       Log.debug { "Setting password for #{service}:#{username}" }
+      encrypted_password = @config.encrypt_passwords? ? @crypter.encrypt(password) : password
       cred = Credential.new(
         service: service,
         username: username,
-        password: password,
-        encryption_key: @config.encryption_key
+        password: encrypted_password
       )
       with_operation("set_password") { |backend| backend.set_password(service, username, cred.password.as(String)) }
     end

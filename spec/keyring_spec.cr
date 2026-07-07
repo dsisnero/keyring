@@ -190,5 +190,27 @@ describe Keyring do
         Keyring::Keyring.recommended?(Keyring::LinuxSecretServiceBackend).should be_true
       {% end %}
     end
+
+    describe "encryption integration" do
+      it "encrypts and decrypts password with symmetric SecretBox" do
+        config = TestHelpers.create_test_config(encrypt: true)
+        kr = Keyring::Keyring.new(backend: Keyring::MockBackend.new, config: config)
+        svc = "enc-sym-#{Random.rand(10_000)}"
+        kr.set_password(svc, "user", "secret123")
+        kr.get_password(svc, "user").should eq("secret123")
+      end
+
+      it "encrypts and decrypts password with asymmetric CryptoBox" do
+        kp = Keyring::Keypair.generate_encryption
+        config = TestHelpers.create_test_config(encrypt: true)
+        config.encryption_type = "asymmetric"
+        config.encryption_public_key = kp.public_key
+        config.encryption_secret_key = kp.secret_key
+        kr = Keyring::Keyring.new(backend: Keyring::MockBackend.new, config: config)
+        svc = "enc-asym-#{Random.rand(10_000)}"
+        kr.set_password(svc, "user", "secret456")
+        kr.get_password(svc, "user").should eq("secret456")
+      end
+    end
   end
 end
