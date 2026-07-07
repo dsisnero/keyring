@@ -297,13 +297,13 @@ module Keyring
     def get_credential(service : String, username : String? = nil) : Credential?
       if username.nil? || username.empty?
         creds = list_credentials
-        cred = creds.find { |c| c.service == service }
-        cred.try { |c| c.password = decrypt_if_needed(c.password) }
-        cred
+        found = creds.find { |entry| entry.service == service }
+        found.try { |entry| entry.password = decrypt_if_needed(entry.password) }
+        found
       else
-        cred = with_operation("get_credential") { |backend| backend.get_credential(service, username) }
-        cred.try { |c| c.password = decrypt_if_needed(c.password) }
-        cred
+        backend_cred = with_operation("get_credential") { |backend| backend.get_credential(service, username) }
+        backend_cred.try { |entry| entry.password = decrypt_if_needed(entry.password) }
+        backend_cred
       end
     end
 
@@ -429,7 +429,7 @@ module Keyring
 
     def export_credentials(path : String)
       Log.info { "Exporting credentials to #{path}" }
-      creds = list_credentials.map do |c|
+      creds = list_credentials.map do |entry|
         c.password = decrypt_if_needed(c.password)
         c
       end
