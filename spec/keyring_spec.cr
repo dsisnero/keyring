@@ -164,5 +164,31 @@ describe Keyring do
       kr.delete_password(svc, "user")
       kr.get_password(svc, "user").should be_nil
     end
+
+    it "_detect_backend respects limit filter" do
+      Keyring::Keyring.reset_backend_overrides
+      # Filter that excludes all backends
+      none = Keyring::Keyring._detect_backend(->(_klass : Keyring::Backend.class) { false })
+      none.should be_a(Keyring::FailBackend)
+    end
+
+    it "_detect_backend returns viable backend without limit" do
+      Keyring::Keyring.reset_backend_overrides
+      backend = Keyring::Keyring._detect_backend
+      backend.should be_a(Keyring::Backend)
+      (backend.is_a?(Keyring::FailBackend)).should be_false
+    end
+
+    it "recommended rejects low-priority backends" do
+      Keyring::Keyring.recommended?(Keyring::NullBackend).should be_false
+      Keyring::Keyring.recommended?(Keyring::FileBackend).should be_false
+    end
+
+    it "recommended accepts high-priority backends" do
+      # LinuxSecretServiceBackend has priority 5.0 (recommended)
+      {% if flag?(:linux) %}
+        Keyring::Keyring.recommended?(Keyring::LinuxSecretServiceBackend).should be_true
+      {% end %}
+    end
   end
 end

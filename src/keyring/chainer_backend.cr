@@ -12,6 +12,10 @@ module Keyring
     Backend.register(self)
     getter backends : Array(Backend)
 
+    def self.priority : Float64
+      3.0
+    end
+
     def self.available? : Bool
       false
     end

@@ -19,6 +19,10 @@ module Keyring
     @credentials : Hash(String, Credential)
     @file_lock : File?
 
+    def self.priority : Float64
+      0.5
+    end
+
     def self.available? : Bool
       true # File backend is always available
     end

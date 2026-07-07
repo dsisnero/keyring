@@ -21,6 +21,10 @@ module Keyring
     @handle : Int32
     @connected : Bool
 
+    def self.priority : Float64
+      4.9
+    end
+
     def self.available? : Bool
       return false unless system("which qdbus > /dev/null 2>&1")
 
@@ -256,8 +260,11 @@ module Keyring
   end
 
   class KWallet4Backend < KWalletBackend
-    Backend.register(self)
     BUS_NAME_V4 = "org.kde.kwalletd"
+
+    def self.priority : Float64
+      4.5
+    end
 
     def self.available? : Bool
       return false unless system("which qdbus > /dev/null 2>&1")

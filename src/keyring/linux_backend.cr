@@ -177,6 +177,10 @@ module Keyring
       end
     {% end %}
 
+    def self.priority : Float64
+      5.0
+    end
+
     def self.available? : Bool
       {% if flag?(:linux) %}
         true

@@ -153,6 +153,12 @@ module Keyring
         }
     end
 
+    # Check if a backend class has recommended priority (>= 1).
+    # Mirrors Python keyring.core.recommended(backend).
+    def self.recommended?(backend_class : Backend.class) : Bool
+      backend_class.priority >= 1
+    end
+
     # Detect and initialize a backend with optional caller-supplied filter.
     # Mirrors Python keyring.core._detect_backend(limit).
     def self._detect_backend(limit : Proc(Backend.class, Bool)? = nil) : Backend

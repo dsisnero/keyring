@@ -146,6 +146,10 @@ module Keyring
     # Note: Implement proper kSecAttrAccessible support for access control
     class_property? allow_any_access : Bool = false
 
+    def self.priority : Float64
+      5.0
+    end
+
     def self.available? : Bool
       {% if flag?(:darwin) %}
         # Check if Security framework is available

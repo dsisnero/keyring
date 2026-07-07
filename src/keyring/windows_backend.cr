@@ -24,6 +24,10 @@ module Keyring
 
     CRED_TYPE_GENERIC = LibWin32::CRED_TYPE::CRED_TYPE_GENERIC
 
+    def self.priority : Float64
+      5.0
+    end
+
     def self.available? : Bool
       {% if flag?(:windows) %}
         true
