@@ -230,6 +230,27 @@ describe Keyring do
         kr.update_password(svc, "user", "new-enc")
         kr.get_password(svc, "user").should eq("new-enc")
       end
+
+      it "export/import roundtrip preserves encrypted credentials" do
+        config = TestHelpers.create_test_config(encrypt: true)
+        kr = Keyring::Keyring.new(backend: Keyring::MockBackend.new, config: config)
+        svc1 = "exp-svc1-#{Random.rand(10_000)}"
+        svc2 = "exp-svc2-#{Random.rand(10_000)}"
+        kr.set_password(svc1, "user1", "pass1")
+        kr.set_password(svc2, "user2", "pass2")
+
+        export_path = "/tmp/keyring-export-#{Random.rand(1_000_000)}.json"
+        kr.export_credentials(export_path)
+
+        # Import into new keyring instance
+        kr2 = Keyring::Keyring.new(backend: Keyring::MockBackend.new, config: config)
+        kr2.import_credentials(export_path)
+
+        kr2.get_password(svc1, "user1").should eq("pass1")
+        kr2.get_password(svc2, "user2").should eq("pass2")
+
+        File.delete(export_path) if File.exists?(export_path)
+      end
     end
   end
 end
