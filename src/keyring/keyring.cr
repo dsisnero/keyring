@@ -430,8 +430,8 @@ module Keyring
     def export_credentials(path : String)
       Log.info { "Exporting credentials to #{path}" }
       creds = list_credentials.map do |entry|
-        c.password = decrypt_if_needed(c.password)
-        c
+        entry.password = decrypt_if_needed(entry.password)
+        entry
       end
       File.write(path, creds.to_json)
     end

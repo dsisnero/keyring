@@ -181,17 +181,29 @@ describe Keyring do
 
     it "_detect_backend returns highest priority viable backend" do
       Keyring::Keyring.reset_backend_overrides
-      # Override candidates to test priority ordering.
-      # Low-priority FileBackend vs high-priority LinuxSecretServiceBackend
-      Keyring::Keyring.override_backend_candidates([
-        Keyring::FileBackend,
-        Keyring::LinuxSecretServiceBackend,
-      ] of Keyring::Backend.class)
+      # Override candidates to test priority ordering with the high-priority
+      # native backend available on the current platform.
+      {% if flag?(:darwin) %}
+        high_priority_backend = Keyring::MacOsKeyChainBackend
+      {% elsif flag?(:windows) %}
+        high_priority_backend = Keyring::WindowsBackend
+      {% elsif flag?(:linux) %}
+        high_priority_backend = Keyring::LinuxSecretServiceBackend
+      {% end %}
 
-      backend = Keyring::Keyring._detect_backend
-      # Priority: FileBackend=0.5, LinuxSecretServiceBackend=5.0
-      # Highest priority should win
-      backend.should be_a(Keyring::LinuxSecretServiceBackend)
+      {% unless flag?(:darwin) || flag?(:windows) || flag?(:linux) %}
+        pending "no high-priority native backend exists on this platform"
+      {% else %}
+        Keyring::Keyring.override_backend_candidates([
+          Keyring::FileBackend,
+          high_priority_backend,
+        ] of Keyring::Backend.class)
+
+        backend = Keyring::Keyring._detect_backend
+        # Priority: FileBackend=0.5, native backends=5.0
+        # Highest priority should win
+        backend.class.should eq(high_priority_backend)
+      {% end %}
     ensure
       Keyring::Keyring.reset_backend_overrides
     end
