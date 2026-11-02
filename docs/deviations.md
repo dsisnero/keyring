@@ -22,7 +22,7 @@ Intentional differences between this Crystal port and the upstream Python keyrin
 |---|---|---|---|
 | macOS Keychain | Security.framework via ctypes | Security.framework via direct C bindings | ✅ |
 | Windows Credential Manager | pywin32 / pywin32-ctypes | win32cr shard (dsisnero fork) | ✅ |
-| Secret Service (Freedesktop) | secretstorage library (Python) | libsecret C API via `schema_shim.c` | ✅ |
+| Secret Service (Freedesktop) | secretstorage library (Python) | libsecret C API via `secret_schema_newv` | ✅ |
 | KDE KWallet5 | dbus-python | qdbus CLI subprocess | ✅ |
 | KDE KWallet4 | dbus-python | qdbus CLI subprocess (separate bus path) | ✅ |
 | GI/libsecret | gi.repository.Secret (GObject) | Direct libsecret C API (same library) | ✅ |

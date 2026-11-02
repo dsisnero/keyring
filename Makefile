@@ -180,7 +180,7 @@ endif
 
 # Convenience aliases
 test-linux: docker-build
-	$(RUN_CMD) with-keyring sh -c "cd /workspace && gcc -c -fPIC src/keyring/schema_shim.c -o src/keyring/schema_shim.o \$$(pkg-config --cflags libsecret-1) 2>&1 && shards check || shards install --skip-postinstall && crystal spec spec/keyring/linux_backend_spec.cr && crystal spec spec/keyring/kwallet_backend_spec.cr"
+	$(RUN_CMD) with-keyring sh -c "cd /workspace && shards check || shards install --skip-postinstall && crystal spec spec/keyring/linux_backend_spec.cr && crystal spec spec/keyring/kwallet_backend_spec.cr"
 dev-linux: docker-build docker-dev
 
 # KWallet-specific container testing
