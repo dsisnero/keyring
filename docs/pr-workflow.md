@@ -3,7 +3,7 @@
 ## Before Creating a PR
 
 ```bash
-crystal spec                   # all 313 tests
+crystal spec                   # all specs
 make format-check              # crystal tool format --check src spec
 make lint                      # ameba
 shards build                   # verify compilation
@@ -21,13 +21,16 @@ shards build                   # verify compilation
 
 ## Commit Messages
 
-Conventional commits: `<type>: <description>`
+For upstream parity work, use `port: <feature>` followed by bullets and the
+upstream pin (`jaraco/keyring v25.7.0 (38c0401)`).
+
+For non-parity maintenance, use conventional commits: `<type>: <description>`
 
 Types: `feat`, `fix`, `test`, `refactor`, `docs`, `chore`
 
 Examples:
 ```
-feat: add backend registration system
+port: implement ChainerBackend failover
 fix: correct FILETIME field names for Windows
 test: add contract tests for ChainerBackend
 docs: update architecture diagram

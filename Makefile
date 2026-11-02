@@ -93,15 +93,20 @@ test-all: test
 
 lint:
 	@echo "Running Ameba linting..."
-	shards build && crystal run lib/ameba/bin/ameba.cr -- --fail-level Error
+	shards build
+	@if command -v ameba >/dev/null 2>&1; then \
+		ameba --fail-level Error; \
+	else \
+		crystal run lib/ameba/bin/ameba.cr -- --fail-level Error; \
+	fi
 
 format:
 	@echo "Formatting code..."
-	crystal tool format
+	crystal tool format src spec
 
 format-check:
 	@echo "Checking code formatting..."
-	crystal tool format --check
+	crystal tool format --check src spec
 
 pre-commit: format-check lint
 	@echo "Pre-commit checks passed!"
@@ -111,6 +116,7 @@ clean:
 	rm -rf lib/
 	rm -rf .crystal/
 	rm -rf .shards/
+	rm -rf temp/*
 	find . -name "*.dwarf" -delete
 
 # Apply Windows compat patches for POSIX-only shard dependencies

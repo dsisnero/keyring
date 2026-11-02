@@ -2,6 +2,20 @@
 
 Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 
+## Where we are
+
+- **Current focus:** maintenance. Parity against Python keyring v25.7.0 is
+  complete; every tracked item below is checked.
+- **Next up:**
+  1. Triage open issues and CI failures.
+  2. Refresh `plans/inventory/*.tsv` if the upstream submodule moves.
+- **Status by area:** Core API, backend system, backend features, CLI,
+  credentials, configuration, encryption, error handling, reliability
+  extensions, tests, and module-level API are all complete.
+- **Last commit:** `ffabbaf` refactor: fix ameba Naming/BlockParameterName.
+- **Gate results:** `make format-check` pass; `make lint` pass (1 warning);
+  `make build` pass; `make test` 359 examples, 0 failures, 3 pending.
+
 ## Core API
 
 - [x] `get_password(service, username)` — module-level + CLI get command

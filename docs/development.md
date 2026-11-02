@@ -19,7 +19,7 @@ shards install
 1. Make changes with tests
 2. Run quality gates:
    ```bash
-   crystal spec              # all 313 tests
+   crystal spec              # all specs
    make format-check         # crystal tool format --check src spec
    make lint                 # ameba
    shards build              # verify compilation

@@ -3,7 +3,7 @@
 ## Running Tests
 
 ```bash
-crystal spec                     # All 313 tests
+crystal spec                     # All specs
 crystal spec spec/path/to/file   # Single file
 make test                        # All tests (alias)
 
