@@ -22,7 +22,7 @@ Intentional differences between this Crystal port and the upstream Python keyrin
 |---|---|---|---|
 | macOS Keychain | Security.framework via ctypes | Security.framework via direct C bindings | ✅ |
 | Windows Credential Manager | pywin32 / pywin32-ctypes | win32cr shard (dsisnero fork) | ✅ |
-| Secret Service (Freedesktop) | secretstorage library (Python) | libsecret C API via `schema_shim.c` | ✅ |
+| Secret Service (Freedesktop) | secretstorage library (Python) | libsecret C API via `secret_schema_newv` | ✅ |
 | KDE KWallet5 | dbus-python | qdbus CLI subprocess | ✅ |
 | KDE KWallet4 | dbus-python | qdbus CLI subprocess (separate bus path) | ✅ |
 | GI/libsecret | gi.repository.Secret (GObject) | Direct libsecret C API (same library) | ✅ |
@@ -39,10 +39,11 @@ Intentional differences between this Crystal port and the upstream Python keyrin
 | Env var prefix | `PYTHON_KEYRING_BACKEND` | `KEYRING_BACKEND` |
 | Property env vars | `KEYRING_PROPERTY_{NAME}` | `KEYRING_PROPERTY_{NAME}` (same) |
 | Encrypt flag | `KEYRING_ENCRYPT` env var | `KEYRING_ENCRYPT` env var (same) |
-| Config root (Linux) | `~/.config/python_keyring/` | `~/.config/keyring_cr/` |
-| Data root (Linux) | `~/.local/share/python_keyring/` | `~/.local/share/keyring_cr/` |
-| Config root (macOS) | Same as Linux | `~/.config/keyring_cr/` |
-| Config root (Windows) | `%LOCALAPPDATA%\Python Keyring\` | `%APPDATA%\keyring_cr\` |
+| XDG roots | `platformdirs`; XDG honored on Linux only | `$XDG_CONFIG_HOME/keyring_cr` and `$XDG_DATA_HOME/keyring_cr` honored on Linux, macOS, and Windows when set |
+| Config root (Linux, no XDG) | `~/.config/python_keyring/` | `~/.config/keyring_cr/` |
+| Data root (Linux, no XDG) | `~/.local/share/python_keyring/` | `~/.local/share/keyring_cr/` |
+| Config/data root (macOS, no XDG) | Same as Linux | Same as Linux |
+| Config/data root (Windows, no XDG) | `%LOCALAPPDATA%\Python Keyring\` | `%LOCALAPPDATA%\Python Keyring\` |
 
 ## Unported Features
 

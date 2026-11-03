@@ -19,7 +19,7 @@ shards install
 1. Make changes with tests
 2. Run quality gates:
    ```bash
-   crystal spec              # all 313 tests
+   crystal spec              # all specs
    make format-check         # crystal tool format --check src spec
    make lint                 # ameba
    shards build              # verify compilation
@@ -61,5 +61,8 @@ When porting upstream Python code:
 ### Windows
 
 - Requires win32cr shard (dsisnero fork)
+- Run `make patch-windows` after `shards install` to apply Windows shard
+  compatibility patches (mmap stub, sodium linker helpers, and
+  win32cr/stdlib declaration conflicts)
 - Windows backend compiles only on Windows (`{% if flag?(:windows) %}`)
 - Build/test on a Windows machine or CI

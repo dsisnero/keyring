@@ -2,6 +2,20 @@
 
 Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 
+## Where we are
+
+- **Current focus:** maintenance. Parity against Python keyring v25.7.0 is
+  complete; every tracked item below is checked.
+- **Next up:**
+  1. Triage open issues and CI failures.
+  2. Refresh `plans/inventory/*.tsv` if the upstream submodule moves.
+- **Status by area:** Core API, backend system, backend features, CLI,
+  credentials, configuration, platform paths, encryption, error handling,
+  reliability extensions, tests, and module-level API are all complete.
+- **Last commit:** `818a894` test: make platform and integration specs Windows-safe.
+- **Gate results:** `make format-check` pass; `make lint` pass (0 issues);
+  `make build` pass; `make test` 358 examples, 0 failures, 3 pending.
+
 ## Core API
 
 - [x] `get_password(service, username)` — module-level + CLI get command
@@ -88,6 +102,16 @@ Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 - [x] `default_service` — optional default service name
 - [x] `set_property(key, value)` / `save` — programmatic config mutation
 - [x] Backend discovery from config file with keyring-path support (upstream: `load_config` + `_load_keyring_path`)
+
+## Platform Paths (Crystal Extension)
+
+- [x] Honor `XDG_DATA_HOME` and `XDG_CONFIG_HOME` on Linux, macOS, and
+  Windows when set.
+- [x] Fall back to platform locations when the XDG variables are unset:
+  `~/.local/share/keyring_cr` and `~/.config/keyring_cr` on Linux/macOS,
+  `%LOCALAPPDATA%\Python Keyring` on Windows.
+- [x] Document the intentional XDG-on-all-platforms behavior in
+  `docs/deviations.md`.
 
 ## Encryption
 

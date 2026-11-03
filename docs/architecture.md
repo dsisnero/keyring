@@ -12,7 +12,7 @@ All backends implement the abstract `Keyring::Backend` class. Backends auto-regi
 Keyring::Backend (abstract)
   ├── MacOsKeyChainBackend     — macOS Keychain via Security.framework C API
   ├── WindowsBackend           — Windows Credential Manager via win32cr
-  ├── LinuxSecretServiceBackend — Linux Secret Service via libsecret + schema_shim.c
+  ├── LinuxSecretServiceBackend — Linux Secret Service via libsecret
   ├── KWalletBackend           — KDE KWallet5 via qdbus CLI
   ├── KWallet4Backend          — KDE KWallet4 via qdbus CLI (separate bus path)
   ├── ChainerBackend           — Iterates all viable backends for reads; tries writes on each
@@ -69,7 +69,7 @@ Platform-specific backends are loaded first via compile-time flags in `src/keyri
 - Compat module (`compat.cr`) provides LibC type aliases and LibWin32 forwarding
 
 ### Linux (`src/keyring/linux_backend.cr`)
-- libsecret C API via `schema_shim.c` (non-variadic ARM64 workaround)
+- libsecret C API via `secret_schema_newv` (non-variadic, avoids ARM64 FFI issues)
 - Links against `libsecret-1`, `glib-2.0` at compile time
 - Separate `kwallet_backend.cr` for KDE KWallet5/4 via qdbus CLI
 - Docker-based CI testing with D-Bus session + GNOME Keyring or KWallet daemon

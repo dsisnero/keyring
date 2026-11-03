@@ -140,7 +140,6 @@ module Keyring
 
     # Return all viable backend instances (not just classes).
     # Mirrors Python keyring.backend.get_all_keyring().
-    # ameba:disable Naming/AccessorMethodName
     def self.get_all_keyring : Array(Backend)
       candidates = @@candidates_override || get_candidate_list_static
       candidates
@@ -187,7 +186,6 @@ module Keyring
 
     # Get the static candidate list (not instance-dependent).
     # Uses the backend registry populated by Backend.register calls in each backend file.
-    # ameba:disable Naming/AccessorMethodName
     private def self.get_candidate_list_static : Array(Backend.class)
       if Backend.registry.empty?
         build_default_candidates

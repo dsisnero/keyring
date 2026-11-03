@@ -31,7 +31,6 @@ jobs:
           ubuntu-latest)
             sudo apt-get update
             sudo apt-get install -y libsodium-dev libsecret-1-dev libglib2.0-dev
-            gcc -c -fPIC src/keyring/schema_shim.c -o src/keyring/schema_shim.o $(pkg-config --cflags libsecret-1)
             ;;
           macos-latest)
             brew install libsodium || true
@@ -41,6 +40,11 @@ jobs:
             ;;
         esac
 
+    - name: Configure Windows library path
+      if: matrix.os == 'windows-latest'
+      shell: bash
+      run: echo "LIB=$LIB;${GITHUB_WORKSPACE}/vcpkg_installed/x64-windows/lib" >> "$GITHUB_ENV"
+
     - name: Install shard dependencies
       shell: bash
       env:
@@ -49,6 +53,7 @@ jobs:
         case "${{ matrix.os }}" in
           windows-latest)
             shards install --skip-postinstall 2>&1 | grep -v "Could not find executable" || true
+            bash patches/windows/apply.sh
             ;;
           *)
             shards install
@@ -105,7 +110,6 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y libsodium-dev libsecret-1-dev libglib2.0-dev
-        gcc -c -fPIC src/keyring/schema_shim.c -o src/keyring/schema_shim.o $(pkg-config --cflags libsecret-1)
 
     - name: Install shard dependencies
       env:
@@ -116,7 +120,7 @@ jobs:
       run: crystal tool format --check src spec
 
     - name: Run Ameba
-      run: shards build && crystal run lib/ameba/bin/ameba.cr -- --fail-level Error
+      run: make lint
 
   binaries:
     needs: [test]
@@ -144,7 +148,6 @@ jobs:
           ubuntu-latest)
             sudo apt-get update
             sudo apt-get install -y libsodium-dev libsecret-1-dev libglib2.0-dev
-            gcc -c -fPIC src/keyring/schema_shim.c -o src/keyring/schema_shim.o $(pkg-config --cflags libsecret-1)
             ;;
           macos-latest)
             brew install libsodium || true
@@ -154,6 +157,11 @@ jobs:
             ;;
         esac
 
+    - name: Configure Windows library path
+      if: matrix.os == 'windows-latest'
+      shell: bash
+      run: echo "LIB=$LIB;${GITHUB_WORKSPACE}/vcpkg_installed/x64-windows/lib" >> "$GITHUB_ENV"
+
     - name: Install shard dependencies
       shell: bash
       env:
@@ -162,6 +170,7 @@ jobs:
         case "${{ matrix.os }}" in
           windows-latest)
             shards install --skip-postinstall 2>&1 | grep -v "Could not find executable" || true
+            bash patches/windows/apply.sh
             ;;
           *)
             shards install

@@ -5,7 +5,6 @@ require "./errors"
   @[Link("secret-1")]
   @[Link("glib-2.0")]
   @[Link("gobject-2.0")]
-  @[Link(ldflags: "#{__DIR__}/schema_shim.o")]
   lib LibSecret
     alias GError = Void
     alias GList = Void
@@ -39,32 +38,9 @@ require "./errors"
       type : SecretSchemaAttributeType
     end
 
-    fun secret_schema_new(name : LibC::Char*, flags : SecretSchemaFlags, ...) : SecretSchema*
+    # Non-variadic schema constructor (safe for FFI; avoids ARM64 variadic ABI issues)
+    fun secret_schema_newv(name : LibC::Char*, flags : SecretSchemaFlags, attrs : GHashTable*) : SecretSchema*
     fun secret_schema_unref(schema : SecretSchema*)
-
-    # C wrapper for schema creation (avoids ARM64 variadic FFI)
-    fun crystal_secret_schema_create(name : LibC::Char*, attr0_name : LibC::Char*, attr0_type : SecretSchemaAttributeType, attr1_name : LibC::Char*, attr1_type : SecretSchemaAttributeType) : SecretSchema*
-
-    # Manually constructed schema to work around ARM64 variadic FFI issues
-    # SecretSchema struct: name(8) + flags(4) + padding(4) + attrs[] + reserved fields
-    struct SecretSchemaManual
-      name : LibC::Char*
-      flags : SecretSchemaFlags
-      _pad : Int32
-      attr0_name : LibC::Char*
-      attr0_type : SecretSchemaAttributeType
-      attr1_name : LibC::Char*
-      attr1_type : SecretSchemaAttributeType
-      attr_null : LibC::Char*
-      reserved : Int32
-      reserved1 : Void*
-      reserved2 : Void*
-      reserved3 : Void*
-      reserved4 : Void*
-      reserved5 : Void*
-      reserved6 : Void*
-      reserved7 : Void*
-    end
 
     # Non-variadic *_v sync calls (safe on ARM64)
     fun secret_password_lookupv_sync(schema : SecretSchema*, attributes : GHashTable*, cancellable : Void*, error : GError**) : LibC::Char*
@@ -148,14 +124,33 @@ module Keyring
 
       private def get_schema : LibSecret::SecretSchema*
         @schema ||= begin
-          schema = LibSecret.crystal_secret_schema_create(
-            SCHEMA_NAME.to_unsafe,
-            SERVICE_ATTR.to_unsafe, LibSecret::SecretSchemaAttributeType::STRING,
-            USERNAME_ATTR.to_unsafe, LibSecret::SecretSchemaAttributeType::STRING
+          attrs = LibSecret.g_hash_table_new_full(
+            ->LibSecret.g_str_hash(Void*).pointer,
+            ->LibSecret.g_str_equal(Void*, Void*).pointer,
+            ->LibC.free(Void*).pointer,
+            nil
           )
+          add_schema_attribute(attrs, SERVICE_ATTR)
+          add_schema_attribute(attrs, USERNAME_ATTR)
+
+          schema = LibSecret.secret_schema_newv(
+            SCHEMA_NAME.to_unsafe,
+            LibSecret::SecretSchemaFlags::NONE,
+            attrs
+          )
+          LibSecret.g_hash_table_unref(attrs)
           raise NoBackendError.new("Failed to create libsecret schema") if schema.null?
           schema
         end
+      end
+
+      # GHashTable values are the enum cast directly to pointers (GINT_TO_POINTER).
+      private def add_schema_attribute(attrs : LibSecret::GHashTable*, name : String)
+        LibSecret.g_hash_table_insert(
+          attrs,
+          LibC.strdup(name.to_unsafe).as(Void*),
+          Pointer(Void).new(LibSecret::SecretSchemaAttributeType::STRING.value.to_u64)
+        )
       end
 
       # Build a GHashTable of string→string attributes for *_v functions.

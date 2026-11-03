@@ -93,15 +93,16 @@ test-all: test
 
 lint:
 	@echo "Running Ameba linting..."
-	shards build && crystal run lib/ameba/bin/ameba.cr -- --fail-level Error
+	shards build
+	crystal run lib/ameba/bin/ameba.cr -- --min-severity Error
 
 format:
 	@echo "Formatting code..."
-	crystal tool format
+	crystal tool format src spec
 
 format-check:
 	@echo "Checking code formatting..."
-	crystal tool format --check
+	crystal tool format --check src spec
 
 pre-commit: format-check lint
 	@echo "Pre-commit checks passed!"
@@ -111,14 +112,16 @@ clean:
 	rm -rf lib/
 	rm -rf .crystal/
 	rm -rf .shards/
+	rm -rf temp/*
 	find . -name "*.dwarf" -delete
 
 # Apply Windows compat patches for POSIX-only shard dependencies
 patch-windows:
-	cp patches/windows/mmap/mmap.cr lib/mmap/src/mmap.cr
+	bash patches/windows/apply.sh
 
 unpatch-windows:
-	cd lib/mmap && git checkout -- src/mmap.cr 2>/dev/null || true
+	rm -rf lib/mmap lib/win32cr
+	shards install
 
 # Container targets (work with Apple container, docker-compose, or docker)
 docker-build:
@@ -174,7 +177,7 @@ endif
 
 # Convenience aliases
 test-linux: docker-build
-	$(RUN_CMD) with-keyring sh -c "cd /workspace && gcc -c -fPIC src/keyring/schema_shim.c -o src/keyring/schema_shim.o \$$(pkg-config --cflags libsecret-1) 2>&1 && shards check || shards install --skip-postinstall && crystal spec spec/keyring/linux_backend_spec.cr && crystal spec spec/keyring/kwallet_backend_spec.cr"
+	$(RUN_CMD) with-keyring sh -c "cd /workspace && shards check || shards install --skip-postinstall && crystal spec spec/keyring/linux_backend_spec.cr && crystal spec spec/keyring/kwallet_backend_spec.cr"
 dev-linux: docker-build docker-dev
 
 # KWallet-specific container testing

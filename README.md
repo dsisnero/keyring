@@ -282,11 +282,21 @@ Keyring::Backend (abstract)
 
 See [docs/architecture.md](docs/architecture.md) for details.
 
+## Documentation
+
+- [Resuming work](docs/resuming.md) — start here in a new session
+- [Architecture](docs/architecture.md)
+- [Development](docs/development.md)
+- [Coding guidelines](docs/coding-guidelines.md)
+- [Testing](docs/testing.md)
+- [PR workflow](docs/pr-workflow.md)
+- [Deviations from upstream](docs/deviations.md)
+
 ## Development
 
 ```bash
 shards install          # Install dependencies
-crystal spec            # Run all 313 tests
+crystal spec            # Run all specs
 make format-check       # Check code formatting
 make lint               # Run Ameba linter
 shards build            # Build CLI binary
@@ -314,7 +324,8 @@ GitHub Actions runs on every push/PR to main:
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
 3. Make changes, add tests
 4. Run quality gates: `crystal spec && make lint && make format-check`
-5. Commit with conventional commit messages (`feat:`, `fix:`, `test:`, `docs:`, `chore:`)
+5. Commit with `port: <feature>` for upstream parity work, or conventional
+   commits (`feat:`, `fix:`, `test:`, `docs:`, `chore:`) for maintenance
 6. Push and open a Pull Request
 
 See [docs/development.md](docs/development.md) for detailed setup and conventions.
