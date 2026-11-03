@@ -3,22 +3,24 @@ require "../../src/keyring/cli"
 
 module Keyring
   describe CLI do
+    cli_tmp = ""
+
     before_each do
       ENV["KEYRING_TEST_CLI"] = "1"
       ENV["KEYRING_BACKEND"] = "FileBackend"
-      tmp = "/tmp/keyring-cli-#{Random.rand(1_000_000)}"
-      Dir.mkdir_p(tmp)
-      Dir.mkdir_p(File.join(tmp, "keyring_cr"))
-      ENV["XDG_DATA_HOME"] = tmp
-      ENV["XDG_CONFIG_HOME"] = tmp
+      cli_tmp = File.join(Dir.tempdir, "keyring-cli-#{Random.rand(1_000_000)}")
+      Dir.mkdir_p(cli_tmp)
+      set_test_home_env(cli_tmp)
+      Dir.mkdir_p(Platform.data_root)
+      Dir.mkdir_p(Platform.config_root)
     end
 
     after_each do
       ENV.delete("KEYRING_TEST_CLI")
       ENV.delete("KEYRING_BACKEND")
       ENV.delete("KEYRING_LOG_LEVEL")
-      ENV.delete("XDG_DATA_HOME")
-      ENV.delete("XDG_CONFIG_HOME")
+      restore_test_home_env
+      FileUtils.rm_rf(cli_tmp) unless cli_tmp.empty?
       CLI.reset_io
       CLI.reset_password_provider
     end
@@ -112,15 +114,15 @@ module Keyring
       service = "cli-export-#{Random.rand(10_000)}"
       CLI.run(["set", "-s", service, "-u", "u1", "-p", "p1"])
       CLI.run(["set", "-s", service, "-u", "u2", "-p", "p2"])
-      export_file = File.join(ENV["XDG_DATA_HOME"], "keyring_cr", "creds.json")
+      export_file = File.join(Platform.data_root, "creds.json")
       CLI.run(["export", "-f", export_file])
       stdout_io.to_s.includes?("exported").should be_true
 
       # Reset store by pointing to a new directory
-      new_store = File.join(ENV["XDG_DATA_HOME"], "new")
+      new_store = File.join(cli_tmp, "new")
       Dir.mkdir_p(new_store)
-      Dir.mkdir_p(File.join(new_store, "keyring_cr"))
-      ENV["XDG_DATA_HOME"] = new_store
+      set_test_home_env(new_store)
+      Dir.mkdir_p(Platform.data_root)
 
       # Import
       stdout_io.clear
@@ -415,7 +417,7 @@ module Keyring
     it "--disable creates config file with NullBackend" do
       stdout_io = IO::Memory.new; stderr_io = IO::Memory.new
       CLI.set_io(stdout_io, stderr_io)
-      config_path = File.join(ENV["XDG_CONFIG_HOME"], "keyring_cr", "config.yml")
+      config_path = Config.default_config_path
       File.delete(config_path) if File.exists?(config_path)
       begin
         CLI.run(["--disable"])

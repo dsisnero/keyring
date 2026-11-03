@@ -8,7 +8,7 @@ module Keyring
         path.should_not be_empty
 
         {% if flag?(:windows) %}
-          path.should contain("keyring_cr")
+          path.should contain("Python Keyring")
           path.should contain("config.yml")
         {% else %}
           path.should contain("keyring_cr/config.yml")

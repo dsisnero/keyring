@@ -51,7 +51,7 @@ module TestHelpers
 
   # Temporary file helper
   def with_temp_file(prefix : String = "keyring_test", &)
-    path = "/tmp/#{prefix}_#{Time.utc.to_unix}.tmp"
+    path = File.join(Dir.tempdir, "#{prefix}_#{Time.utc.to_unix}_#{Random.rand(1_000_000)}.tmp")
     begin
       yield path
     ensure
@@ -61,13 +61,57 @@ module TestHelpers
 
   # Temporary directory helper
   def with_temp_dir(prefix : String = "keyring_test", &)
-    path = "/tmp/#{prefix}_#{Time.utc.to_unix}"
+    path = File.join(Dir.tempdir, "#{prefix}_#{Time.utc.to_unix}_#{Random.rand(1_000_000)}")
     begin
       Dir.mkdir_p(path)
       yield path
     ensure
       FileUtils.rm_rf(path) if Dir.exists?(path)
     end
+  end
+
+  # Environment variables used by Keyring::Platform to select data/config roots.
+  class HomeEnv
+    KEYS = %w[XDG_DATA_HOME XDG_CONFIG_HOME LOCALAPPDATA APPDATA ProgramData]
+
+    @@saved : Hash(String, String?)?
+
+    def self.set(dir : String)
+      @@saved ||= KEYS.to_h { |key| {key, ENV[key]?} }
+      {% if flag?(:windows) %}
+        ENV["LOCALAPPDATA"] = dir
+        ENV["APPDATA"] = dir
+        ENV["ProgramData"] = dir
+      {% else %}
+        ENV["XDG_DATA_HOME"] = dir
+        ENV["XDG_CONFIG_HOME"] = dir
+      {% end %}
+    end
+
+    def self.restore
+      if saved = @@saved
+        saved.each do |key, value|
+          if value
+            ENV[key] = value
+          else
+            ENV.delete(key)
+          end
+        end
+        @@saved = nil
+      end
+    end
+  end
+
+  # Point the platform data/config roots at `dir` for the current example.
+  # The first call snapshots the previous environment; call
+  # `restore_test_home_env` in `after_each` to restore it.
+  def set_test_home_env(dir : String)
+    HomeEnv.set(dir)
+  end
+
+  # Restore the environment captured by the first `set_test_home_env` call.
+  def restore_test_home_env
+    HomeEnv.restore
   end
 
   # Set environment variable for duration of block, restore after
