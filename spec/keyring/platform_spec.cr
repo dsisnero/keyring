@@ -3,67 +3,55 @@ require "../spec_helper"
 module Keyring
   describe Platform do
     describe "config_root" do
-      it "returns platform-specific config directory" do
-        root = Platform.config_root
-        root.should_not be_nil
-        root.should_not be_empty
-        {% if flag?(:windows) %}
-          root.should contain("Python Keyring")
-        {% else %}
-          root.should contain("keyring_cr")
-        {% end %}
+      it "honors XDG_CONFIG_HOME on every platform" do
+        custom = File.join(Dir.tempdir, "keyring-xdg-config")
+        with_env("XDG_CONFIG_HOME", custom) do
+          Platform.config_root.should eq(File.join(custom, "keyring_cr"))
+        end
       end
 
-      {% unless flag?(:windows) %}
-        it "respects XDG_CONFIG_HOME on unix" do
-          custom = "/tmp/test-config"
-          with_env("XDG_CONFIG_HOME", custom) do
-            root = Platform.config_root
-            root.should contain(custom)
-            root.should contain("keyring_cr")
+      it "falls back to the platform location when XDG_CONFIG_HOME is unset" do
+        {% if flag?(:windows) %}
+          custom = File.join(Dir.tempdir, "keyring-localappdata-config")
+          with_env("LOCALAPPDATA", custom) do
+            with_env("XDG_CONFIG_HOME", nil) do
+              Platform.config_root.should eq(File.join(custom, "Python Keyring"))
+            end
           end
-        end
-
-        it "falls back to ~/.config/keyring_cr on unix when XDG_CONFIG_HOME unset" do
+        {% else %}
           with_env("XDG_CONFIG_HOME", nil) do
             root = Platform.config_root
             root.should contain(".config")
             root.should contain("keyring_cr")
           end
-        end
-      {% end %}
+        {% end %}
+      end
     end
 
     describe "data_root" do
-      it "returns platform-specific data directory" do
-        root = Platform.data_root
-        root.should_not be_nil
-        root.should_not be_empty
-        {% if flag?(:windows) %}
-          root.should contain("Python Keyring")
-        {% else %}
-          root.should contain("keyring_cr")
-        {% end %}
+      it "honors XDG_DATA_HOME on every platform" do
+        custom = File.join(Dir.tempdir, "keyring-xdg-data")
+        with_env("XDG_DATA_HOME", custom) do
+          Platform.data_root.should eq(File.join(custom, "keyring_cr"))
+        end
       end
 
-      {% unless flag?(:windows) %}
-        it "respects XDG_DATA_HOME on unix" do
-          custom = "/tmp/test-data"
-          with_env("XDG_DATA_HOME", custom) do
-            root = Platform.data_root
-            root.should contain(custom)
-            root.should contain("keyring_cr")
+      it "falls back to the platform location when XDG_DATA_HOME is unset" do
+        {% if flag?(:windows) %}
+          custom = File.join(Dir.tempdir, "keyring-localappdata-data")
+          with_env("LOCALAPPDATA", custom) do
+            with_env("XDG_DATA_HOME", nil) do
+              Platform.data_root.should eq(File.join(custom, "Python Keyring"))
+            end
           end
-        end
-
-        it "falls back to ~/.local/share/keyring_cr on unix when XDG_DATA_HOME unset" do
+        {% else %}
           with_env("XDG_DATA_HOME", nil) do
             root = Platform.data_root
             root.should contain(".local")
             root.should contain("keyring_cr")
           end
-        end
-      {% end %}
+        {% end %}
+      end
     end
   end
 end

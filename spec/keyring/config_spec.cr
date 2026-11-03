@@ -3,16 +3,27 @@ require "../spec_helper"
 module Keyring
   describe Config do
     describe ".default_config_path" do
-      it "returns platform-specific path" do
-        path = Config.default_config_path
-        path.should_not be_empty
-
-        {% if flag?(:windows) %}
-          path.should contain("Python Keyring")
+      it "returns the platform-specific path when XDG_CONFIG_HOME is unset" do
+        with_env("XDG_CONFIG_HOME", nil) do
+          path = Config.default_config_path
+          path.should_not be_empty
           path.should contain("config.yml")
-        {% else %}
-          path.should contain("keyring_cr/config.yml")
-        {% end %}
+
+          {% if flag?(:windows) %}
+            path.should contain("Python Keyring")
+          {% else %}
+            path.should contain("keyring_cr")
+          {% end %}
+        end
+      end
+
+      it "honors XDG_CONFIG_HOME on every platform" do
+        xdg = File.join(Dir.tempdir, "keyring-xdg-config")
+        with_env("XDG_CONFIG_HOME", xdg) do
+          path = Config.default_config_path
+          path.starts_with?(File.join(xdg, "keyring_cr")).should be_true
+          path.should contain("config.yml")
+        end
       end
     end
 

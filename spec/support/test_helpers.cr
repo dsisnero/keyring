@@ -78,13 +78,12 @@ module TestHelpers
 
     def self.set(dir : String)
       @@saved ||= KEYS.to_h { |key| {key, ENV[key]?} }
+      ENV["XDG_DATA_HOME"] = dir
+      ENV["XDG_CONFIG_HOME"] = dir
       {% if flag?(:windows) %}
         ENV["LOCALAPPDATA"] = dir
         ENV["APPDATA"] = dir
         ENV["ProgramData"] = dir
-      {% else %}
-        ENV["XDG_DATA_HOME"] = dir
-        ENV["XDG_CONFIG_HOME"] = dir
       {% end %}
     end
 
