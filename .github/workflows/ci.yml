@@ -48,7 +48,7 @@ jobs:
         case "${{ matrix.os }}" in
           windows-latest)
             shards install --skip-postinstall 2>&1 | grep -v "Could not find executable" || true
-            cp patches/windows/mmap/mmap.cr lib/mmap/src/mmap.cr
+            bash patches/windows/apply.sh
             ;;
           *)
             shards install
@@ -160,7 +160,7 @@ jobs:
         case "${{ matrix.os }}" in
           windows-latest)
             shards install --skip-postinstall 2>&1 | grep -v "Could not find executable" || true
-            cp patches/windows/mmap/mmap.cr lib/mmap/src/mmap.cr
+            bash patches/windows/apply.sh
             ;;
           *)
             shards install

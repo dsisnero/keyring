@@ -117,10 +117,11 @@ clean:
 
 # Apply Windows compat patches for POSIX-only shard dependencies
 patch-windows:
-	cp patches/windows/mmap/mmap.cr lib/mmap/src/mmap.cr
+	bash patches/windows/apply.sh
 
 unpatch-windows:
-	cd lib/mmap && git checkout -- src/mmap.cr 2>/dev/null || true
+	rm -rf lib/mmap lib/win32cr
+	shards install
 
 # Container targets (work with Apple container, docker-compose, or docker)
 docker-build:

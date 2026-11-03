@@ -61,5 +61,7 @@ When porting upstream Python code:
 ### Windows
 
 - Requires win32cr shard (dsisnero fork)
+- Run `make patch-windows` after `shards install` to apply Windows shard
+  compatibility patches (mmap stub and win32cr/stdlib declaration conflicts)
 - Windows backend compiles only on Windows (`{% if flag?(:windows) %}`)
 - Build/test on a Windows machine or CI
