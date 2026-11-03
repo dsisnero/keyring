@@ -58,7 +58,6 @@ module Keyring
       exit(code)
     end
 
-    # ameba:disable Metrics/CyclomaticComplexity
     def self.run(args = ARGV)
       command = nil
       service = nil

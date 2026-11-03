@@ -1,3 +1,6 @@
 
 # Use bd merge for beads JSONL files
 .beads/issues.jsonl merge=beads
+
+# Keep Crystal sources at LF on every platform so format checks are stable
+*.cr text eol=lf

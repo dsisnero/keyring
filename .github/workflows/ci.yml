@@ -114,7 +114,7 @@ jobs:
       run: crystal tool format --check src spec
 
     - name: Run Ameba
-      run: shards build && crystal run lib/ameba/bin/ameba.cr -- --fail-level Error
+      run: make lint
 
   binaries:
     needs: [test]

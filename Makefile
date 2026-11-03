@@ -94,11 +94,7 @@ test-all: test
 lint:
 	@echo "Running Ameba linting..."
 	shards build
-	@if command -v ameba >/dev/null 2>&1; then \
-		ameba --fail-level Error; \
-	else \
-		crystal run lib/ameba/bin/ameba.cr -- --fail-level Error; \
-	fi
+	crystal run lib/ameba/bin/ameba.cr -- --min-severity Error
 
 format:
 	@echo "Formatting code..."

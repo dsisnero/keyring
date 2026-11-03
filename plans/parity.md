@@ -12,8 +12,8 @@ Source of truth: `vendor/python-keyring` (submodule, tag v25.7.0)
 - **Status by area:** Core API, backend system, backend features, CLI,
   credentials, configuration, encryption, error handling, reliability
   extensions, tests, and module-level API are all complete.
-- **Last commit:** `61ec8b5` chore: adopt crystal-forge project scaffolding.
-- **Gate results:** `make format-check` pass; `make lint` pass (1 warning);
+- **Last commit:** `031499d` refactor: replace libsecret C shim with secret_schema_newv.
+- **Gate results:** `make format-check` pass; `make lint` pass (0 issues);
   `make build` pass; `make test` 359 examples, 0 failures, 3 pending.
 
 ## Core API

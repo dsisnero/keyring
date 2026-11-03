@@ -80,7 +80,6 @@ module Keyring
       @env_properties = props
     end
 
-    # ameba:disable Naming/AccessorMethodName
     def set_properties_from_env(target : Hash(String, String)? = nil)
       props = target || env_properties
       ENV.each do |key, value|
