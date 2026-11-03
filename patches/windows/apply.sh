@@ -11,6 +11,11 @@ cd "$(dirname "$0")/../.."
 # Windows. Use the stub implementation instead.
 cp patches/windows/mmap/mmap.cr lib/mmap/src/mmap/mmap.cr
 
+# sodium's linker helper is a POSIX shell script; use the Windows equivalents.
+cp patches/windows/sodium/lib_sodium.cr lib/sodium/src/sodium/lib_sodium.cr
+cp patches/windows/sodium/pkg-libs.bat lib/sodium/build/pkg-libs.bat
+cp patches/windows/sodium/env.bat lib/sodium/build/env.bat
+
 # Crystal's Windows stdlib now declares these Win32 functions with different
 # signatures than win32cr's generated bindings. The keyring backend does not
 # use them, so remove the duplicate declarations.

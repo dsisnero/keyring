@@ -40,6 +40,11 @@ jobs:
             ;;
         esac
 
+    - name: Configure Windows library path
+      if: matrix.os == 'windows-latest'
+      shell: bash
+      run: echo "LIB=$LIB;${GITHUB_WORKSPACE}/vcpkg_installed/x64-windows/lib" >> "$GITHUB_ENV"
+
     - name: Install shard dependencies
       shell: bash
       env:
@@ -151,6 +156,11 @@ jobs:
             vcpkg install
             ;;
         esac
+
+    - name: Configure Windows library path
+      if: matrix.os == 'windows-latest'
+      shell: bash
+      run: echo "LIB=$LIB;${GITHUB_WORKSPACE}/vcpkg_installed/x64-windows/lib" >> "$GITHUB_ENV"
 
     - name: Install shard dependencies
       shell: bash
